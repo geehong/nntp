@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  nntp-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nntp_web_client
+    restart: always
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./src/data:/app/src/data
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
