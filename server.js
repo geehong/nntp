@@ -24,13 +24,6 @@ const PORT = 3001;
 
 app.use(express.json());
 
-// Serve built frontend static files if dist exists
-const distPath = path.join(__dirname, 'dist');
-if (fs.existsSync(distPath)) {
-  console.log(`📦 Serving static frontend files from: ${distPath}`);
-  app.use(express.static(distPath));
-}
-
 // CORS Headers Middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
@@ -41,6 +34,31 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// Basic Auth Middleware (Requires login to access entire site, matching blog-news-bot)
+app.use((req, res, next) => {
+  const adminUser = process.env.ADMIN_USERNAME || 'geehong';
+  const adminPass = process.env.ADMIN_PASSWORD || 'Power@6740';
+
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Basic ')) {
+    const creds = Buffer.from(authHeader.split(' ')[1], 'base64').toString('utf-8');
+    const [user, pass] = creds.split(':');
+    if (user === adminUser && pass === adminPass) {
+      return next();
+    }
+  }
+
+  res.setHeader('WWW-Authenticate', 'Basic realm="NNTP Web Client"');
+  return res.status(401).send('Authentication Required');
+});
+
+// Serve built frontend static files if dist exists
+const distPath = path.join(__dirname, 'dist');
+if (fs.existsSync(distPath)) {
+  console.log(`📦 Serving static frontend files from: ${distPath}`);
+  app.use(express.static(distPath));
+}
 
 // --- Initialize SQLite Database ---
 const dbDir = path.dirname(DB_FILE);
