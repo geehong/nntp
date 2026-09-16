@@ -40,6 +40,11 @@ app.use((req, res, next) => {
 
 // Basic Auth Middleware (Requires login to access entire site, matching blog-news-bot)
 app.use((req, res, next) => {
+  // Allow WebSocket Upgrade requests to pass through to WebSocket server
+  if (req.headers.upgrade && req.headers.upgrade.toLowerCase() === 'websocket') {
+    return next();
+  }
+
   const adminUser = (process.env.ADMIN_USERNAME || 'geehong').trim();
   const adminPass = (process.env.ADMIN_PASSWORD || 'Power@6740').trim();
 
