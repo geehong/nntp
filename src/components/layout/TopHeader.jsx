@@ -3,7 +3,7 @@ import { useNNTPStore } from '../../store/useNNTPStore';
 import { Newspaper, Gauge, Key, Search, DownloadCloud, Wifi, WifiOff, Settings, Sparkles } from 'lucide-react';
 
 export default function TopHeader() {
-  const { activeTab, setActiveTab, connected, nntpUser, servers } = useNNTPStore();
+  const { activeTab, setActiveTab, articleSearchQuery, setArticleSearchQuery, connected, nntpUser, servers } = useNNTPStore();
   const primaryServer = (servers || []).find((s) => s.isPrimary) || (servers || [])[0];
   const serverDisplayName = primaryServer ? primaryServer.name : 'ViperNews Server';
 
