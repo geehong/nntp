@@ -385,11 +385,10 @@ export default function ArticleTable() {
 
   const isGrouping = !isServerMode && nzbFilterMode !== 'all';
 
-  // Reset to page 1 whenever the group, grouping mode, page size, or raw
-  // chunk size (scan batch size) changes, since those invalidate whatever's
-  // already been scanned/grouped for the previous configuration.
+  // Reset to page 1 & clear search filter whenever group changes
   useEffect(() => {
     setTablePage(1);
+    setSearchQuery('');
   }, [selectedGroup, isGrouping, pageSize, rawChunkSize]);
 
   // Grouped/Clean mode pagination is entirely local once data is fetched:
