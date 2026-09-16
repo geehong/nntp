@@ -8,10 +8,17 @@ export default function TopHeader() {
   return (
     <header className="top-header">
       <div className="header-brand">
-        <div className="brand-logo">
+        <a
+          href="https://firemarkets.net"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="brand-logo"
+          style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+          title="Visit firemarkets.net"
+        >
           <DownloadCloud size={24} color="#0284c7" />
-          <span>Easynews NNTP</span>
-        </div>
+          <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0f172a' }}>firemarkets usenet</span>
+        </a>
 
         <div
           style={{
