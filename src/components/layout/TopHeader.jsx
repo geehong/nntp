@@ -9,12 +9,17 @@ export default function TopHeader() {
     <header className="top-header">
       <div className="header-brand">
         <a
-          href="https://firemarkets.net"
-          target="_blank"
-          rel="noopener noreferrer"
+          href="https://nntp.firemarkets.net"
           className="brand-logo"
+          onClick={(e) => {
+            e.preventDefault();
+            setActiveTab('reader');
+            if (window.location.pathname !== '/') {
+              window.location.href = 'https://nntp.firemarkets.net';
+            }
+          }}
           style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-          title="Visit firemarkets.net"
+          title="firemarkets usenet Home"
         >
           <DownloadCloud size={24} color="#0284c7" />
           <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0f172a' }}>firemarkets usenet</span>
