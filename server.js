@@ -43,6 +43,10 @@ app.use((req, res, next) => {
 });
 
 // --- Initialize SQLite Database ---
+const dbDir = path.dirname(DB_FILE);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+}
 console.log(`🗄️ Initializing SQLite Database at: ${DB_FILE}`);
 const db = new Database(DB_FILE);
 db.pragma('journal_mode = WAL');
