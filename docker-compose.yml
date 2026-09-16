@@ -12,6 +12,8 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
+      - ADMIN_USERNAME=geehong
+      - ADMIN_PASSWORD=Power@6740
     networks:
       - default
       - shared-network

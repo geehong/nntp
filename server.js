@@ -40,19 +40,27 @@ app.use((req, res, next) => {
 
 // Basic Auth Middleware (Requires login to access entire site, matching blog-news-bot)
 app.use((req, res, next) => {
-  const adminUser = process.env.ADMIN_USERNAME || 'geehong';
-  const adminPass = process.env.ADMIN_PASSWORD || 'Power@6740';
+  const adminUser = (process.env.ADMIN_USERNAME || 'geehong').trim();
+  const adminPass = (process.env.ADMIN_PASSWORD || 'Power@6740').trim();
 
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Basic ')) {
-    const creds = Buffer.from(authHeader.split(' ')[1], 'base64').toString('utf-8');
-    const [user, pass] = creds.split(':');
-    if (user === adminUser && pass === adminPass) {
-      return next();
+    try {
+      const creds = Buffer.from(authHeader.substring(6).trim(), 'base64').toString('utf-8');
+      const colonIndex = creds.indexOf(':');
+      if (colonIndex !== -1) {
+        const user = creds.substring(0, colonIndex).trim();
+        const pass = creds.substring(colonIndex + 1).trim();
+        if (user === adminUser && pass === adminPass) {
+          return next();
+        }
+      }
+    } catch (e) {
+      console.error('Auth parse error:', e);
     }
   }
 
-  res.setHeader('WWW-Authenticate', 'Basic realm="NNTP Web Client"');
+  res.setHeader('WWW-Authenticate', 'Basic realm="NNTP Web Client", charset="UTF-8"');
   return res.status(401).send('Authentication Required');
 });
 
