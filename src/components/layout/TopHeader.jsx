@@ -3,7 +3,9 @@ import { useNNTPStore } from '../../store/useNNTPStore';
 import { Newspaper, Gauge, Key, Search, DownloadCloud, Wifi, WifiOff, Settings, Sparkles } from 'lucide-react';
 
 export default function TopHeader() {
-  const { activeTab, setActiveTab, articleSearchQuery, setArticleSearchQuery, connected, nntpUser } = useNNTPStore();
+  const { activeTab, setActiveTab, connected, nntpUser, servers } = useNNTPStore();
+  const primaryServer = (servers || []).find((s) => s.isPrimary) || (servers || [])[0];
+  const serverDisplayName = primaryServer ? primaryServer.name : 'ViperNews Server';
 
   return (
     <header className="top-header">
@@ -40,7 +42,7 @@ export default function TopHeader() {
           }}
         >
           {connected ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span>{connected ? `Usenet.Farm SSL (${nntpUser})` : 'Connecting...'}</span>
+          <span>{connected ? `${serverDisplayName} SSL (${nntpUser})` : 'Connecting...'}</span>
         </div>
       </div>
 

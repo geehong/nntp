@@ -142,12 +142,12 @@ if (serverCountRow.cnt === 0) {
     'Connected',
     '3000+ Days',
     1289531,
-    1
+    0
   );
 
   insertSrv.run(
     'server-viper',
-    'vipernews',
+    'ViperNews Server',
     process.env.VIPER_HOST || 'news.vipernews.com',
     parseInt(process.env.VIPER_PORT || '563', 10),
     process.env.VIPER_SSL !== 'false' ? 1 : 0,
@@ -157,7 +157,7 @@ if (serverCountRow.cnt === 0) {
     'Connected',
     '3000+ Days',
     1289531,
-    0
+    1
   );
 }
 
