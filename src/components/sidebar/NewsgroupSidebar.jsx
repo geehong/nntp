@@ -6,6 +6,8 @@ export default function NewsgroupSidebar() {
   const {
     selectedGroup,
     setSelectedGroup,
+    selectedServerId,
+    setSelectedServerId,
     newsgroups = [],
     favorites = [],
     favoriteObjects = [],
@@ -17,7 +19,7 @@ export default function NewsgroupSidebar() {
   } = useNNTPStore();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [serverExpanded, setServerExpanded] = useState(true);
+  const [expandedServers, setExpandedServers] = useState({ 'server-viper': true, 'server-farm': true });
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
 
   const safeGroups = Array.isArray(newsgroups) ? newsgroups : [];
@@ -39,6 +41,10 @@ export default function NewsgroupSidebar() {
   });
 
   const favoriteGroups = Array.from(favoriteMap.values());
+
+  const toggleServerExpand = (serverId) => {
+    setExpandedServers((prev) => ({ ...prev, [serverId]: !prev[serverId] }));
+  };
 
   return (
     <aside
@@ -92,86 +98,91 @@ export default function NewsgroupSidebar() {
       </div>
 
       {/* Render All Configured NNTP Servers */}
-      {servers.map((srv) => (
-        <div key={srv.id} style={{ marginBottom: '14px' }}>
-          <div
-            onClick={() => setSelectedGroup('__SERVER__')}
-            className={`group-item ${selectedGroup === '__SERVER__' ? 'active' : ''}`}
-            style={{
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              padding: isCollapsed ? '8px 0' : '8px 10px',
-              borderRadius: '6px',
-              background: selectedGroup === '__SERVER__' ? '#e0f2fe' : '#f8fafc',
-              border: '1px solid #cbd5e1',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'space-between',
-            }}
-            title={`${srv.name} (${srv.host}:${srv.port})`}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              {!isCollapsed && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setServerExpanded(!serverExpanded);
-                  }}
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: '3px',
-                    width: '18px',
-                    height: '18px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    padding: 0,
-                    fontSize: '0.8rem',
-                    fontWeight: 'bold',
-                    color: srv.isPrimary ? '#0284c7' : '#059669',
-                  }}
-                  title={serverExpanded ? "Collapse Server Tree (-)" : "Expand Server Tree (+)"}
-                >
-                  {serverExpanded ? '-' : '+'}
-                </button>
-              )}
-              <Server size={18} color={srv.isPrimary ? '#0284c7' : '#059669'} />
-              {!isCollapsed && (
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '110px' }}>
-                  {srv.name}
-                </span>
-              )}
-            </div>
+      {servers.map((srv) => {
+        const isServerActive = selectedServerId === srv.id;
+        const isExpanded = expandedServers[srv.id] !== false;
 
-            {!isCollapsed && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    downloadServerNewsgroups();
-                  }}
-                  disabled={isDownloadingGroups}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '3px',
-                    fontSize: '0.68rem',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    color: '#0284c7',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                  }}
-                  title="Sync Newsgroups List from Server"
-                >
-                  {isDownloadingGroups ? <Loader2 size={10} className="spin" /> : <RefreshCw size={10} />}
-                  <span>Sync</span>
-                </button>
+        return (
+          <div key={srv.id} style={{ marginBottom: '14px' }}>
+            <div
+              onClick={() => setSelectedServerId(srv.id)}
+              className={`group-item ${isServerActive && selectedGroup === '__SERVER__' ? 'active' : ''}`}
+              style={{
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                padding: isCollapsed ? '8px 0' : '8px 10px',
+                borderRadius: '6px',
+                background: isServerActive ? '#e0f2fe' : '#f8fafc',
+                border: isServerActive ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: isCollapsed ? 'center' : 'space-between',
+              }}
+              title={`${srv.name} (${srv.host}:${srv.port})`}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {!isCollapsed && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleServerExpand(srv.id);
+                    }}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '3px',
+                      width: '18px',
+                      height: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold',
+                      color: srv.isPrimary ? '#0284c7' : '#059669',
+                    }}
+                    title={isExpanded ? "Collapse Server Tree (-)" : "Expand Server Tree (+)"}
+                  >
+                    {isExpanded ? '-' : '+'}
+                  </button>
+                )}
+                <Server size={18} color={srv.isPrimary ? '#0284c7' : '#059669'} />
+                {!isCollapsed && (
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '110px' }}>
+                    {srv.name}
+                  </span>
+                )}
+              </div>
+
+              {!isCollapsed && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedServerId(srv.id);
+                      downloadServerNewsgroups(srv.id);
+                    }}
+                    disabled={isDownloadingGroups}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      fontSize: '0.68rem',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#0284c7',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                    title="Sync Newsgroups List from Server"
+                  >
+                    {isDownloadingGroups && isServerActive ? <Loader2 size={10} className="spin" /> : <RefreshCw size={10} />}
+                    <span>Sync</span>
+                  </button>
 
                 <button
                   onClick={(e) => {
@@ -198,7 +209,7 @@ export default function NewsgroupSidebar() {
           </div>
 
           {/* Tree Children under Server (Favorites List) */}
-          {serverExpanded && (
+          {isExpanded && (
             <div style={{ paddingLeft: isCollapsed ? 0 : '12px', marginTop: '6px', borderLeft: isCollapsed ? 'none' : '2px dashed #cbd5e1', marginLeft: isCollapsed ? 0 : '12px' }}>
               <div style={{ marginBottom: '8px' }}>
                 <div
@@ -287,7 +298,8 @@ export default function NewsgroupSidebar() {
             </div>
           )}
         </div>
-      ))}
-    </aside>
+      );
+    })}
+  </aside>
   );
 }

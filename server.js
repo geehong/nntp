@@ -88,18 +88,20 @@ db.pragma('journal_mode = WAL');
 // Create Tables & Indexes
 db.exec(`
   CREATE TABLE IF NOT EXISTS newsgroups (
-    name TEXT PRIMARY KEY,
+    server_id TEXT DEFAULT 'server-farm',
+    name TEXT,
     high TEXT,
     low TEXT,
     status TEXT,
     count TEXT,
     article_count TEXT,
     rawNNTPLine TEXT,
-    is_favorite INTEGER DEFAULT 0
+    is_favorite INTEGER DEFAULT 0,
+    PRIMARY KEY (server_id, name)
   );
 
-  CREATE INDEX IF NOT EXISTS idx_newsgroups_name ON newsgroups(name);
-  CREATE INDEX IF NOT EXISTS idx_newsgroups_fav ON newsgroups(is_favorite);
+  CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_name ON newsgroups(server_id, name);
+  CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_fav ON newsgroups(server_id, is_favorite);
 
   CREATE TABLE IF NOT EXISTS metadata (
     key TEXT PRIMARY KEY,
@@ -214,7 +216,7 @@ if (groupCountRow.cnt === 0 && fs.existsSync(JSON_CACHE_FILE)) {
   }
 }
 
-// --- API: Get Paginated & Filtered Newsgroups (Ultra-Fast SQLite Indexing) ---
+// --- API: Get Paginated & Filtered Newsgroups (Filtered by Server ID) ---
 app.get('/api/newsgroups', (req, res) => {
   const page = Math.max(1, parseInt(req.query.page || '1', 10));
   const pageSize = Math.max(1, parseInt(req.query.pageSize || '25', 10));
@@ -223,9 +225,16 @@ app.get('/api/newsgroups', (req, res) => {
   const order = (req.query.order || 'asc').toLowerCase() === 'desc' ? 'DESC' : 'ASC';
   const favoriteOnly = req.query.favoriteOnly === 'true';
 
+  // Get primary server ID if serverId not specified
+  let serverId = req.query.serverId;
+  if (!serverId) {
+    const primaryRow = db.prepare('SELECT id FROM nntp_servers WHERE isPrimary = 1 LIMIT 1').get();
+    serverId = primaryRow ? primaryRow.id : 'server-viper';
+  }
+
   try {
-    let whereClauses = [];
-    let queryParams = {};
+    let whereClauses = ['server_id = @serverId'];
+    let queryParams = { serverId };
 
     if (search) {
       whereClauses.push('name LIKE @search');
@@ -235,7 +244,7 @@ app.get('/api/newsgroups', (req, res) => {
       whereClauses.push('is_favorite = 1');
     }
 
-    const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+    const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
 
     // Sanitize and handle numeric casting for SQLite sorting
     const numericCols = ['high', 'low', 'count', 'article_count'];
@@ -250,24 +259,24 @@ app.get('/api/newsgroups', (req, res) => {
     const countRow = db.prepare(`SELECT COUNT(*) as cnt FROM newsgroups ${whereSql}`).get(queryParams);
     const totalCount = countRow.cnt;
 
-    // Total Groups in Database
-    const totalGroupsRow = db.prepare('SELECT COUNT(*) as cnt FROM newsgroups').get();
+    // Total Groups in Database for this server
+    const totalGroupsRow = db.prepare('SELECT COUNT(*) as cnt FROM newsgroups WHERE server_id = ?').get(serverId);
     const totalGroupsCount = totalGroupsRow.cnt;
 
-    // Total Favorites Count
-    const favCountRow = db.prepare('SELECT COUNT(*) as cnt FROM newsgroups WHERE is_favorite = 1').get();
+    // Total Favorites Count for this server
+    const favCountRow = db.prepare('SELECT COUNT(*) as cnt FROM newsgroups WHERE server_id = ? AND is_favorite = 1').get(serverId);
 
     // Query Paginated Slice
     const offset = (page - 1) * pageSize;
     const items = db.prepare(`
-      SELECT name, high, low, status, count, article_count, rawNNTPLine, is_favorite
+      SELECT server_id, name, high, low, status, count, article_count, rawNNTPLine, is_favorite
       FROM newsgroups
       ${whereSql}
       ORDER BY ${orderExpression} ${order}
       LIMIT @pageSize OFFSET @offset
     `).all({ ...queryParams, pageSize, offset });
 
-    const lastUpdatedRow = db.prepare("SELECT value FROM metadata WHERE key = 'lastUpdated'").get();
+    const lastUpdatedRow = db.prepare("SELECT value FROM metadata WHERE key = ?").get(`lastUpdated_${serverId}`) || db.prepare("SELECT value FROM metadata WHERE key = 'lastUpdated'").get();
 
     return res.json({
       hasCache: totalGroupsCount > 0,
@@ -279,6 +288,7 @@ app.get('/api/newsgroups', (req, res) => {
       pageSize,
       totalPages: Math.ceil(totalCount / pageSize) || 1,
       lastUpdated: lastUpdatedRow ? lastUpdatedRow.value : null,
+      serverId,
     });
   } catch (e) {
     console.error('SQLite Query Error:', e);
@@ -286,12 +296,18 @@ app.get('/api/newsgroups', (req, res) => {
   }
 });
 
-// --- API: Get Favorites List Only ---
+// --- API: Get Favorites List Only (Filtered by serverId) ---
 app.get('/api/favorites', (req, res) => {
+  let serverId = req.query.serverId;
+  if (!serverId) {
+    const primaryRow = db.prepare('SELECT id FROM nntp_servers WHERE isPrimary = 1 LIMIT 1').get();
+    serverId = primaryRow ? primaryRow.id : 'server-viper';
+  }
+
   try {
-    const rows = db.prepare('SELECT name, high, low, status, count, article_count FROM newsgroups WHERE is_favorite = 1').all();
+    const rows = db.prepare('SELECT name, high, low, status, count, article_count FROM newsgroups WHERE server_id = ? AND is_favorite = 1').all(serverId);
     const favNames = rows.map((r) => r.name);
-    return res.json({ favorites: favNames, favoriteObjects: rows });
+    return res.json({ favorites: favNames, favoriteObjects: rows, serverId });
   } catch (e) {
     return res.json({ favorites: [], favoriteObjects: [] });
   }
@@ -299,20 +315,26 @@ app.get('/api/favorites', (req, res) => {
 
 // --- API: Toggle Single Favorite ---
 app.post('/api/favorites/toggle', (req, res) => {
-  const { name } = req.body;
+  const { name, serverId: reqServerId } = req.body;
   if (!name) return res.status(400).json({ error: 'Name is required' });
 
+  let serverId = reqServerId;
+  if (!serverId) {
+    const primaryRow = db.prepare('SELECT id FROM nntp_servers WHERE isPrimary = 1 LIMIT 1').get();
+    serverId = primaryRow ? primaryRow.id : 'server-viper';
+  }
+
   try {
-    const row = db.prepare('SELECT is_favorite FROM newsgroups WHERE name = ?').get(name);
+    const row = db.prepare('SELECT is_favorite FROM newsgroups WHERE server_id = ? AND name = ?').get(serverId, name);
     let newFav = 1;
     if (row) {
       newFav = row.is_favorite === 1 ? 0 : 1;
-      db.prepare('UPDATE newsgroups SET is_favorite = ? WHERE name = ?').run(newFav, name);
+      db.prepare('UPDATE newsgroups SET is_favorite = ? WHERE server_id = ? AND name = ?').run(newFav, serverId, name);
     } else {
-      db.prepare('INSERT INTO newsgroups (name, is_favorite) VALUES (?, 1)').run(name);
+      db.prepare('INSERT INTO newsgroups (server_id, name, is_favorite) VALUES (?, ?, 1)').run(serverId, name);
     }
 
-    const favRows = db.prepare('SELECT name FROM newsgroups WHERE is_favorite = 1').all();
+    const favRows = db.prepare('SELECT name FROM newsgroups WHERE server_id = ? AND is_favorite = 1').all(serverId);
     return res.json({ success: true, isFavorite: newFav === 1, favorites: favRows.map((r) => r.name) });
   } catch (e) {
     console.error('Failed to toggle favorite:', e);
@@ -322,19 +344,25 @@ app.post('/api/favorites/toggle', (req, res) => {
 
 // --- API: Batch Save Favorites ---
 app.post('/api/favorites/batch', (req, res) => {
-  const { names } = req.body;
+  const { names, serverId: reqServerId } = req.body;
   if (!Array.isArray(names)) return res.status(400).json({ error: 'Names array required' });
 
+  let serverId = reqServerId;
+  if (!serverId) {
+    const primaryRow = db.prepare('SELECT id FROM nntp_servers WHERE isPrimary = 1 LIMIT 1').get();
+    serverId = primaryRow ? primaryRow.id : 'server-viper';
+  }
+
   try {
-    const updateStmt = db.prepare('UPDATE newsgroups SET is_favorite = 1 WHERE name = ?');
+    const updateStmt = db.prepare('UPDATE newsgroups SET is_favorite = 1 WHERE server_id = ? AND name = ?');
     const batchTx = db.transaction((groupNames) => {
       for (const name of groupNames) {
-        updateStmt.run(name);
+        updateStmt.run(serverId, name);
       }
     });
     batchTx(names);
 
-    const favRows = db.prepare('SELECT name FROM newsgroups WHERE is_favorite = 1').all();
+    const favRows = db.prepare('SELECT name FROM newsgroups WHERE server_id = ? AND is_favorite = 1').all(serverId);
     return res.json({ success: true, favorites: favRows.map((r) => r.name) });
   } catch (e) {
     return res.status(500).json({ error: e.message });
@@ -643,6 +671,7 @@ wss.on('connection', (ws) => {
   let nntpSocket = null;
   let authStep = 0;
   let isDownloadingGroups = false;
+  let downloadServerId = 'server-viper';
   let downloadedGroups = [];
 
   let isFetchingBody = false;
@@ -699,12 +728,12 @@ wss.on('connection', (ws) => {
           isDownloadingGroups = false;
           const lastUpdated = new Date().toISOString();
 
-          console.log(`✅ Downloaded ${downloadedGroups.length.toLocaleString()} newsgroups. Saving into SQLite DB...`);
+          console.log(`✅ Downloaded ${downloadedGroups.length.toLocaleString()} newsgroups for server [${downloadServerId}]. Saving into SQLite DB...`);
           try {
             const upsertStmt = db.prepare(`
-              INSERT INTO newsgroups (name, high, low, status, count, article_count, rawNNTPLine)
-              VALUES (@name, @high, @low, @status, @count, @article_count, @rawNNTPLine)
-              ON CONFLICT(name) DO UPDATE SET
+              INSERT INTO newsgroups (server_id, name, high, low, status, count, article_count, rawNNTPLine)
+              VALUES (@server_id, @name, @high, @low, @status, @count, @article_count, @rawNNTPLine)
+              ON CONFLICT(server_id, name) DO UPDATE SET
                 high = excluded.high,
                 low = excluded.low,
                 status = excluded.status,
@@ -720,10 +749,11 @@ wss.on('connection', (ws) => {
             });
             insertBatch(downloadedGroups);
 
+            db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run(`lastUpdated_${downloadServerId}`, lastUpdated);
             db.prepare('INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)').run('lastUpdated', lastUpdated);
             console.log('💾 SQLite DB successfully updated!');
 
-            ws.send(JSON.stringify({ type: 'FETCH_GROUPS_SUCCESS', count: downloadedGroups.length, lastUpdated }));
+            ws.send(JSON.stringify({ type: 'FETCH_GROUPS_SUCCESS', count: downloadedGroups.length, lastUpdated, serverId: downloadServerId }));
           } catch (err) {
             console.error('Failed to save newsgroups into SQLite DB:', err);
           }
@@ -738,6 +768,7 @@ wss.on('connection', (ws) => {
             const realCount = (high >= low && low > 0) ? (high - low + 1) : 0;
             if (groupName && !groupName.startsWith('215')) {
               downloadedGroups.push({
+                server_id: downloadServerId,
                 name: groupName,
                 count: high.toLocaleString(),
                 high: high.toLocaleString(),
@@ -834,8 +865,9 @@ wss.on('connection', (ws) => {
       const data = JSON.parse(message.toString());
 
       if (data.type === 'FETCH_SERVER_NEWSGROUPS' && nntpSocket && authStep === 3) {
-        console.log('>>> FETCHING FULL NEWSGROUPS FROM SERVER (LIST)');
+        console.log(`>>> FETCHING FULL NEWSGROUPS FROM SERVER (LIST) FOR [${data.serverId || 'server-viper'}]`);
         isDownloadingGroups = true;
+        downloadServerId = data.serverId || 'server-viper';
         downloadedGroups = [];
         safeWrite('LIST\r\n');
       } else if (data.type === 'FETCH_ARTICLE_BODY' && nntpSocket && authStep === 3) {

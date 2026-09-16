@@ -42,6 +42,13 @@ export const useNNTPStore = create((set, get) => ({
   activeTab: 'reader',
   setActiveTab: (tab) => set({ activeTab: tab }),
 
+  selectedServerId: 'server-viper',
+  setSelectedServerId: (serverId) => {
+    set({ selectedServerId: serverId, selectedGroup: '__SERVER__', articles: [], loading: false, articleSearchQuery: '' });
+    get().fetchServerNewsgroupsPage({ page: 1, serverId });
+    get().fetchFavorites(serverId);
+  },
+
   selectedGroup: 'alt.binaries.teal',
   setSelectedGroup: (group) => {
     if (group === '__SERVER__') {
@@ -78,12 +85,13 @@ export const useNNTPStore = create((set, get) => ({
   isFetchingServerPage: false,
 
   fetchServerNewsgroupsPage: async (params = {}) => {
-    const { serverPage, serverPageSize, serverSearch, serverSort, serverOrder } = get();
+    const { serverPage, serverPageSize, serverSearch, serverSort, serverOrder, selectedServerId } = get();
     const p = params.page !== undefined ? params.page : serverPage;
     const ps = params.pageSize !== undefined ? params.pageSize : serverPageSize;
     const s = params.search !== undefined ? params.search : serverSearch;
     const st = params.sort !== undefined ? params.sort : serverSort;
     const o = params.order !== undefined ? params.order : serverOrder;
+    const srvId = params.serverId !== undefined ? params.serverId : selectedServerId;
 
     set({ isFetchingServerPage: true });
 
@@ -92,6 +100,7 @@ export const useNNTPStore = create((set, get) => ({
         page: p,
         pageSize: ps,
         search: s,
+        serverId: srvId,
         ...(st ? { sort: st, order: o } : {}),
       });
 
@@ -111,6 +120,13 @@ export const useNNTPStore = create((set, get) => ({
           serverOrder: o,
           lastUpdated: data.lastUpdated || get().lastUpdated,
         });
+      } else {
+        set({
+          newsgroups: [],
+          serverTotalCount: 0,
+          serverTotalGroupsCount: 0,
+          serverTotalPages: 1,
+        });
       }
     } catch (err) {
       console.error('Failed to fetch server newsgroups page:', err);
@@ -119,9 +135,10 @@ export const useNNTPStore = create((set, get) => ({
     }
   },
 
-  fetchFavorites: async () => {
+  fetchFavorites: async (targetServerId) => {
+    const srvId = targetServerId || get().selectedServerId;
     try {
-      const res = await fetch('/api/favorites');
+      const res = await fetch(`/api/favorites?serverId=${srvId}`);
       const data = await res.json();
       if (Array.isArray(data.favorites)) {
         set({ favorites: data.favorites, favoriteObjects: data.favoriteObjects || [] });
@@ -132,11 +149,12 @@ export const useNNTPStore = create((set, get) => ({
   },
 
   toggleStar: async (groupName) => {
+    const srvId = get().selectedServerId;
     try {
       const res = await fetch('/api/favorites/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: groupName }),
+        body: JSON.stringify({ name: groupName, serverId: srvId }),
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.favorites)) {
@@ -149,11 +167,12 @@ export const useNNTPStore = create((set, get) => ({
   },
 
   addFavoritesBatch: async (groupNames) => {
+    const srvId = get().selectedServerId;
     try {
       const res = await fetch('/api/favorites/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ names: groupNames }),
+        body: JSON.stringify({ names: groupNames, serverId: srvId }),
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.favorites)) {
@@ -351,11 +370,12 @@ export const useNNTPStore = create((set, get) => ({
     get().fetchChunk({ end: rawCursorEnd, limit: limit !== undefined ? limit : rawChunkSize, append: true });
   },
 
-  downloadServerNewsgroups: () => {
-    const { ws } = get();
+  downloadServerNewsgroups: (targetServerId) => {
+    const { ws, selectedServerId } = get();
+    const srvId = targetServerId || selectedServerId;
     set({ isDownloadingGroups: true });
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'FETCH_SERVER_NEWSGROUPS' }));
+      ws.send(JSON.stringify({ type: 'FETCH_SERVER_NEWSGROUPS', serverId: srvId }));
     }
   },
 
