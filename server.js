@@ -105,7 +105,61 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT
   );
+
+  CREATE TABLE IF NOT EXISTS nntp_servers (
+    id TEXT PRIMARY KEY,
+    name TEXT,
+    host TEXT,
+    port INTEGER,
+    useSSL INTEGER,
+    username TEXT,
+    password TEXT,
+    maxConnections INTEGER,
+    status TEXT,
+    retention TEXT,
+    syncedGroups INTEGER,
+    isPrimary INTEGER DEFAULT 0
+  );
 `);
+
+// Seed default servers if table is empty
+const serverCountRow = db.prepare('SELECT COUNT(*) as cnt FROM nntp_servers').get();
+if (serverCountRow.cnt === 0) {
+  const insertSrv = db.prepare(`
+    INSERT INTO nntp_servers (id, name, host, port, useSSL, username, password, maxConnections, status, retention, syncedGroups, isPrimary)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  insertSrv.run(
+    'server-farm',
+    'Usenet.Farm Server',
+    process.env.NNTP_HOST || 'news.usenet.farm',
+    parseInt(process.env.NNTP_PORT || '563', 10),
+    process.env.NNTP_SSL !== 'false' ? 1 : 0,
+    (process.env.NNTP_USER || 'ufadh3njs4xtxy0e').split('#')[0].trim(),
+    (process.env.NNTP_PASS || 'c35y18s53qglwx5e').split('#')[0].trim(),
+    parseInt(process.env.NNTP_MAX_CONNECTIONS || '10', 10),
+    'Connected',
+    '3000+ Days',
+    1289531,
+    1
+  );
+
+  insertSrv.run(
+    'server-viper',
+    'vipernews',
+    process.env.VIPER_HOST || 'news.vipernews.com',
+    parseInt(process.env.VIPER_PORT || '563', 10),
+    process.env.VIPER_SSL !== 'false' ? 1 : 0,
+    (process.env.VIPER_USER || 'geecgpia@gmail.com').split('#')[0].trim(),
+    (process.env.VIPER_PASS || 'Power@6740').split('#')[0].trim(),
+    parseInt(process.env.VIPER_MAX_CONNECTIONS || '5', 10),
+    'Connected',
+    '3000+ Days',
+    1289531,
+    0
+  );
+}
 
 // Auto Migration from legacy JSON files if DB is empty
 const groupCountRow = db.prepare('SELECT COUNT(*) as cnt FROM newsgroups').get();
@@ -310,8 +364,95 @@ app.post('/api/newsgroups/update-counts', (req, res) => {
     });
     updateTx(names);
 
-    return res.json({ success: true, updatedCount: names.length });
+    return res.json({ success: true });
   } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// --- API: Get Servers List ---
+app.get('/api/servers', (req, res) => {
+  try {
+    const servers = db.prepare('SELECT * FROM nntp_servers').all();
+    const formatted = servers.map(s => ({
+      ...s,
+      useSSL: !!s.useSSL,
+      isPrimary: !!s.isPrimary
+    }));
+    return res.json({ success: true, servers: formatted });
+  } catch (e) {
+    console.error('Failed to fetch servers:', e);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// --- API: Save / Update Server ---
+app.post('/api/servers/save', (req, res) => {
+  const { id, name, host, port, useSSL, username, password, maxConnections, isPrimary } = req.body;
+  if (!name || !host || !port) {
+    return res.status(400).json({ error: 'Name, host, and port are required' });
+  }
+
+  try {
+    if (isPrimary) {
+      db.prepare('UPDATE nntp_servers SET isPrimary = 0').run();
+    }
+
+    const serverId = id || `server-${Date.now()}`;
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO nntp_servers 
+      (id, name, host, port, useSSL, username, password, maxConnections, status, retention, syncedGroups, isPrimary)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    stmt.run(
+      serverId,
+      name,
+      host,
+      parseInt(port, 10),
+      useSSL ? 1 : 0,
+      username || '',
+      password || '',
+      parseInt(maxConnections || '10', 10),
+      'Connected',
+      '3000+ Days',
+      0,
+      isPrimary ? 1 : 0
+    );
+
+    const servers = db.prepare('SELECT * FROM nntp_servers').all().map(s => ({
+      ...s,
+      useSSL: !!s.useSSL,
+      isPrimary: !!s.isPrimary
+    }));
+
+    return res.json({ success: true, servers });
+  } catch (e) {
+    console.error('Failed to save server:', e);
+    return res.status(500).json({ error: e.message });
+  }
+});
+
+// --- API: Delete Server ---
+app.delete('/api/servers/:id', (req, res) => {
+  const { id } = req.params;
+  try {
+    const countRow = db.prepare('SELECT COUNT(*) as cnt FROM nntp_servers').get();
+    if (countRow.cnt <= 1) {
+      return res.status(400).json({ error: '최소 1개의 서버는 등록되어 있어야 합니다.' });
+    }
+
+    db.prepare('DELETE FROM nntp_servers WHERE id = ?').run(id);
+
+    const servers = db.prepare('SELECT * FROM nntp_servers').all().map(s => ({
+      ...s,
+      useSSL: !!s.useSSL,
+      isPrimary: !!s.isPrimary
+    }));
+
+    return res.json({ success: true, servers });
+  } catch (e) {
+    console.error('Failed to delete server:', e);
     return res.status(500).json({ error: e.message });
   }
 });

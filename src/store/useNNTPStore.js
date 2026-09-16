@@ -366,6 +366,7 @@ export const useNNTPStore = create((set, get) => ({
 
     ws.onopen = () => {
       console.log('Connected to NNTP Bridge Server');
+      get().fetchServers();
       get().fetchFavorites();
       get().fetchServerNewsgroupsPage({ page: 1 });
     };
@@ -375,6 +376,7 @@ export const useNNTPStore = create((set, get) => ({
 
       if (data.type === 'AUTH_SUCCESS') {
         set({ connected: true, nntpUser: data.user });
+        get().fetchServers();
         get().fetchFavorites();
         get().fetchServerNewsgroupsPage({ page: 1 });
         if (get().selectedGroup && get().selectedGroup !== '__SERVER__') {
@@ -482,6 +484,18 @@ export const useNNTPStore = create((set, get) => ({
   isServerModalOpen: false,
   editingServer: null,
 
+  fetchServers: async () => {
+    try {
+      const res = await fetch('/api/servers');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.servers) && data.servers.length > 0) {
+        set({ servers: data.servers });
+      }
+    } catch (e) {
+      console.error('Failed to fetch servers from API:', e);
+    }
+  },
+
   openAddServerModal: () => {
     set({ isServerModalOpen: true, editingServer: null });
   },
@@ -495,7 +509,23 @@ export const useNNTPStore = create((set, get) => ({
     set({ isServerModalOpen: false, editingServer: null });
   },
 
-  saveServer: (serverData) => {
+  saveServer: async (serverData) => {
+    try {
+      const res = await fetch('/api/servers/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(serverData),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.servers)) {
+        set({ servers: data.servers, isServerModalOpen: false, editingServer: null });
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to save server to API:', e);
+    }
+
+    // Fallback to local state if backend API request fails
     const { servers } = get();
     if (serverData.id) {
       const updated = servers.map((s) => (s.id === serverData.id ? { ...s, ...serverData } : s));
@@ -513,12 +543,29 @@ export const useNNTPStore = create((set, get) => ({
     }
   },
 
-  deleteServer: (serverId) => {
+  deleteServer: async (serverId) => {
     const { servers } = get();
     if (servers.length <= 1) {
       alert('최소 1개의 서버는 등록되어 있어야 합니다.');
       return;
     }
+
+    try {
+      const res = await fetch(`/api/servers/${serverId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.servers)) {
+        set({ servers: data.servers });
+        return;
+      } else if (data.error) {
+        alert(data.error);
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to delete server via API:', e);
+    }
+
     set({ servers: servers.filter((s) => s.id !== serverId) });
   },
 }));
