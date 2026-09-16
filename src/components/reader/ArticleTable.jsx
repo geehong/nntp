@@ -46,6 +46,7 @@ export default function ArticleTable() {
   const {
     selectedGroup,
     setSelectedGroup,
+    selectedServerId,
     articles = [],
     newsgroups = [],
     favorites = [],
@@ -658,7 +659,7 @@ export default function ArticleTable() {
 
           {isServerMode ? (
             <button
-              onClick={downloadServerNewsgroups}
+              onClick={() => downloadServerNewsgroups(selectedServerId)}
               disabled={isDownloadingGroups}
               style={{
                 padding: '8px 16px',
