@@ -21,6 +21,12 @@ services:
       - NNTP_SSL=true
       - NNTP_USER=ufadh3njs4xtxy0e
       - NNTP_PASS=c35y18s53qglwx5e
+      - VIPER_HOST=news.vipernews.com
+      - VIPER_PORT=563
+      - VIPER_SSL=true
+      - VIPER_USER=geecgpia@gmail.com
+      - VIPER_PASS=Power@6740
+      - VIPER_MAX_CONNECTIONS=5
     networks:
       - default
       - shared-network
