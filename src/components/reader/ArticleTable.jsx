@@ -1156,7 +1156,7 @@ export default function ArticleTable() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Loader2 size={18} className="spin" /> Loading...</div>
                               ) : looksLikeImageArticle(item.subject, bodyContent) ? (
                                 <img
-                                  src={`http://localhost:3001/api/article-image?group=${encodeURIComponent(selectedGroup)}&id=${encodeURIComponent(item.id)}`}
+                                  src={`/api/article-image?group=${encodeURIComponent(selectedGroup)}&id=${encodeURIComponent(item.id)}`}
                                   alt={item.subject}
                                   style={{ maxWidth: '100%', maxHeight: '360px', display: 'block', borderRadius: '6px' }}
                                   onError={(e) => {

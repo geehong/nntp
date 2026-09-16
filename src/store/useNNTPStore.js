@@ -95,7 +95,7 @@ export const useNNTPStore = create((set, get) => ({
         ...(st ? { sort: st, order: o } : {}),
       });
 
-      const res = await fetch(`http://localhost:3001/api/newsgroups?${q.toString()}`);
+      const res = await fetch(`/api/newsgroups?${q.toString()}`);
       const data = await res.json();
 
       if (data.hasCache) {
@@ -121,7 +121,7 @@ export const useNNTPStore = create((set, get) => ({
 
   fetchFavorites: async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/favorites');
+      const res = await fetch('/api/favorites');
       const data = await res.json();
       if (Array.isArray(data.favorites)) {
         set({ favorites: data.favorites, favoriteObjects: data.favoriteObjects || [] });
@@ -133,7 +133,7 @@ export const useNNTPStore = create((set, get) => ({
 
   toggleStar: async (groupName) => {
     try {
-      const res = await fetch('http://localhost:3001/api/favorites/toggle', {
+      const res = await fetch('/api/favorites/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: groupName }),
@@ -150,7 +150,7 @@ export const useNNTPStore = create((set, get) => ({
 
   addFavoritesBatch: async (groupNames) => {
     try {
-      const res = await fetch('http://localhost:3001/api/favorites/batch', {
+      const res = await fetch('/api/favorites/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ names: groupNames }),
@@ -167,7 +167,7 @@ export const useNNTPStore = create((set, get) => ({
 
   updateSelectedGroupCounts: async (groupNames) => {
     try {
-      const res = await fetch('http://localhost:3001/api/newsgroups/update-counts', {
+      const res = await fetch('/api/newsgroups/update-counts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ names: groupNames }),
@@ -360,7 +360,9 @@ export const useNNTPStore = create((set, get) => ({
   },
 
   connectBridge: () => {
-    const ws = new WebSocket('ws://localhost:3001');
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}`;
+    const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
       console.log('Connected to NNTP Bridge Server');
