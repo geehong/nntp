@@ -99,7 +99,20 @@ db.exec(`
     is_favorite INTEGER DEFAULT 0,
     PRIMARY KEY (server_id, name)
   );
+`);
 
+// Migration for existing table schema
+try {
+  const columns = db.prepare("PRAGMA table_info(newsgroups)").all();
+  if (!columns.some(col => col.name === 'server_id')) {
+    console.log('🔄 Migrating newsgroups table: Adding server_id column...');
+    db.exec("ALTER TABLE newsgroups ADD COLUMN server_id TEXT DEFAULT 'server-viper'");
+  }
+} catch (mErr) {
+  console.error('Migration notice:', mErr.message);
+}
+
+db.exec(`
   CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_name ON newsgroups(server_id, name);
   CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_fav ON newsgroups(server_id, is_favorite);
 
