@@ -24,6 +24,9 @@ const PORT = 3001;
 
 app.use(express.json());
 
+// Handle favicon.ico to prevent 404/400 console errors
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
 // CORS Headers Middleware
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
