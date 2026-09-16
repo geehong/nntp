@@ -409,6 +409,9 @@ export const useNNTPStore = create((set, get) => ({
         get().fetchServerNewsgroupsPage({ page: 1 });
         get().fetchFavorites();
         alert(`Successfully fetched & saved ${(data.count || 0).toLocaleString()} newsgroups into SQLite DB!`);
+      } else if (data.type === 'FETCH_GROUPS_ERROR') {
+        set({ isDownloadingGroups: false, downloadProgressCount: 0 });
+        alert(`Failed to save newsgroups: ${data.message}`);
       } else if (data.type === 'GROUP_SUCCESS') {
         set({
           groupStats: { count: data.count, low: data.low, high: data.high },

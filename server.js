@@ -113,7 +113,7 @@ try {
 }
 
 db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_name ON newsgroups(server_id, name);
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_newsgroups_srv_name_unique ON newsgroups(server_id, name);
   CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_fav ON newsgroups(server_id, is_favorite);
 
   CREATE TABLE IF NOT EXISTS metadata (
@@ -769,6 +769,7 @@ wss.on('connection', (ws) => {
             ws.send(JSON.stringify({ type: 'FETCH_GROUPS_SUCCESS', count: downloadedGroups.length, lastUpdated, serverId: downloadServerId }));
           } catch (err) {
             console.error('Failed to save newsgroups into SQLite DB:', err);
+            ws.send(JSON.stringify({ type: 'FETCH_GROUPS_ERROR', message: err.message }));
           }
         } else if (line.startsWith('215')) {
           console.log('📋 LIST response receiving...');
