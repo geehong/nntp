@@ -6,6 +6,7 @@ import ArticleTable from './components/reader/ArticleTable';
 import FarmDashboard from './components/dashboard/FarmDashboard';
 import CredentialsForm from './components/credentials/CredentialsForm';
 import RecommendedUsenet from './components/recommendations/RecommendedUsenet';
+import ServerModal from './components/credentials/ServerModal';
 
 export default function App() {
   const { activeTab, connectBridge, fetchFavorites, fetchServerNewsgroupsPage } = useNNTPStore();
@@ -30,6 +31,8 @@ export default function App() {
           {activeTab === 'credentials' && <CredentialsForm />}
         </main>
       </div>
+
+      <ServerModal />
     </div>
   );
 }

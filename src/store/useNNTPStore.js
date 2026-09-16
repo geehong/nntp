@@ -460,6 +460,65 @@ export const useNNTPStore = create((set, get) => ({
     useSSL: true,
     username: 'ufadh3njs4xtxy0e',
     password: '••••••••••••',
-    maxConnections: 40,
+    maxConnections: 10,
+  },
+
+  servers: [
+    {
+      id: 'server-farm',
+      name: 'Usenet.Farm Server',
+      host: 'news.usenet.farm',
+      port: 563,
+      useSSL: true,
+      username: 'ufadh3njs4xtxy0e',
+      password: 'c35y18s53qglwx5e',
+      maxConnections: 10,
+      status: 'Connected',
+      retention: '3000+ Days',
+      syncedGroups: 1289531,
+      isPrimary: true,
+    },
+  ],
+  isServerModalOpen: false,
+  editingServer: null,
+
+  openAddServerModal: () => {
+    set({ isServerModalOpen: true, editingServer: null });
+  },
+
+  openEditServerModal: (server) => {
+    const target = server || get().servers[0];
+    set({ isServerModalOpen: true, editingServer: target });
+  },
+
+  closeServerModal: () => {
+    set({ isServerModalOpen: false, editingServer: null });
+  },
+
+  saveServer: (serverData) => {
+    const { servers } = get();
+    if (serverData.id) {
+      const updated = servers.map((s) => (s.id === serverData.id ? { ...s, ...serverData } : s));
+      set({ servers: updated, isServerModalOpen: false, editingServer: null });
+    } else {
+      const newServer = {
+        id: `server-${Date.now()}`,
+        status: 'Connected',
+        retention: '3000+ Days',
+        syncedGroups: 0,
+        isPrimary: servers.length === 0,
+        ...serverData,
+      };
+      set({ servers: [...servers, newServer], isServerModalOpen: false, editingServer: null });
+    }
+  },
+
+  deleteServer: (serverId) => {
+    const { servers } = get();
+    if (servers.length <= 1) {
+      alert('최소 1개의 서버는 등록되어 있어야 합니다.');
+      return;
+    }
+    set({ servers: servers.filter((s) => s.id !== serverId) });
   },
 }));

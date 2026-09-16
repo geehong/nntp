@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNNTPStore } from '../../store/useNNTPStore';
-import { Star, Server, RefreshCw, Loader2, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Server, RefreshCw, Loader2, Menu, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 
 export default function NewsgroupSidebar() {
   const {
@@ -12,6 +12,7 @@ export default function NewsgroupSidebar() {
     downloadServerNewsgroups,
     isDownloadingGroups,
     toggleStar,
+    openEditServerModal,
   } = useNNTPStore();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -138,30 +139,53 @@ export default function NewsgroupSidebar() {
           </div>
 
           {!isCollapsed && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                downloadServerNewsgroups();
-              }}
-              disabled={isDownloadingGroups}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px',
-                fontSize: '0.68rem',
-                padding: '2px 6px',
-                borderRadius: '4px',
-                border: '1px solid #cbd5e1',
-                background: '#ffffff',
-                color: '#0284c7',
-                cursor: 'pointer',
-                fontWeight: 600,
-              }}
-              title="Sync Newsgroups List from Server"
-            >
-              {isDownloadingGroups ? <Loader2 size={10} className="spin" /> : <RefreshCw size={10} />}
-              <span>Sync</span>
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadServerNewsgroups();
+                }}
+                disabled={isDownloadingGroups}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px',
+                  fontSize: '0.68rem',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#0284c7',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                }}
+                title="Sync Newsgroups List from Server"
+              >
+                {isDownloadingGroups ? <Loader2 size={10} className="spin" /> : <RefreshCw size={10} />}
+                <span>Sync</span>
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openEditServerModal();
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '3px 5px',
+                  borderRadius: '4px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#475569',
+                  cursor: 'pointer',
+                }}
+                title="Configure NNTP Server"
+              >
+                <Settings size={12} />
+              </button>
+            </div>
           )}
         </div>
 
