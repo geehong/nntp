@@ -3,7 +3,7 @@ import { useNNTPStore } from './store/useNNTPStore';
 import TopHeader from './components/layout/TopHeader';
 import NewsgroupSidebar from './components/sidebar/NewsgroupSidebar';
 import ArticleTable from './components/reader/ArticleTable';
-import FarmDashboard from './components/dashboard/FarmDashboard';
+import StatusDashboard from './components/dashboard/StatusDashboard';
 import CredentialsForm from './components/credentials/CredentialsForm';
 import RecommendedUsenet from './components/recommendations/RecommendedUsenet';
 import ServerModal from './components/credentials/ServerModal';
@@ -22,11 +22,11 @@ export default function App() {
       <TopHeader />
 
       <div className="main-layout">
-        {activeTab === 'reader' && <NewsgroupSidebar />}
+        {(activeTab === 'reader' || activeTab === 'farm') && <NewsgroupSidebar />}
 
         <main className="main-content">
           {activeTab === 'reader' && <ArticleTable />}
-          {activeTab === 'farm' && <FarmDashboard />}
+          {activeTab === 'farm' && <StatusDashboard />}
           {activeTab === 'recommended' && <RecommendedUsenet />}
           {activeTab === 'credentials' && <CredentialsForm />}
         </main>

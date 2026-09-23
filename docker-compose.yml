@@ -9,6 +9,8 @@ services:
       - "3001:3001"
     volumes:
       - ./src/data:/app/src/data
+      - ./downloads:/app/downloads
+      - ./temp:/app/temp
     env_file:
       - .env
     environment:

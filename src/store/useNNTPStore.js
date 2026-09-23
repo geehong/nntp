@@ -39,12 +39,70 @@ const parseOverviewLine = (line) => {
 };
 
 export const useNNTPStore = create((set, get) => ({
+  globalSettings: { rawTemp: '', rawResult: '' },
+  downloads: {}, // { [downloadId]: { current, total, status, error } }
+  xoverProgress: null,
+
+  fetchGlobalSettings: async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/settings');
+      if (res.ok) {
+        const data = await res.json();
+        set({ globalSettings: data });
+      }
+    } catch (e) {
+      console.error('Failed to fetch settings:', e);
+    }
+  },
+
+  saveGlobalSettings: async (settings) => {
+    try {
+      const res = await fetch('http://localhost:3001/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+      if (res.ok) {
+        set({ globalSettings: settings });
+        return true;
+      }
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+    return false;
+  },
+
+  downloadSelectedArticles: async (type, group, filename, ids, nzbData) => {
+    try {
+      const { selectedServerId } = get();
+      const res = await fetch('http://localhost:3001/api/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type, group, filename, ids, serverId: selectedServerId, nzbData
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.success;
+      }
+    } catch (e) {
+      console.error('Failed to download articles:', e);
+    }
+    return false;
+  },
+
   activeTab: 'reader',
   setActiveTab: (tab) => set({ activeTab: tab }),
 
+  disconnectedByUser: false,
+  setDisconnectedByUser: (val) => set({ disconnectedByUser: val }),
+
   selectedServerId: 'server-viper',
   setSelectedServerId: (serverId) => {
-    set({ selectedServerId: serverId, selectedGroup: '__SERVER__', articles: [], loading: false, articleSearchQuery: '' });
+    const srv = get().servers.find(s => s.id === serverId);
+    const newChunkSize = srv?.default_article_count || 300;
+    set({ selectedServerId: serverId, selectedGroup: '__SERVER__', articles: [], loading: false, articleSearchQuery: '', rawChunkSize: newChunkSize });
     get().fetchServerNewsgroupsPage({ page: 1, serverId });
     get().fetchFavorites(serverId);
   },
@@ -84,16 +142,26 @@ export const useNNTPStore = create((set, get) => ({
   serverTotalPages: 1,
   isFetchingServerPage: false,
 
+  serverFavoriteOnly: false,
+
+  setServerFavoriteOnly: (favOnly) => {
+    set({ serverFavoriteOnly: favOnly, serverPage: 1 });
+    get().fetchServerNewsgroupsPage({ page: 1, favoriteOnly: favOnly });
+  },
+
+  serverFavoritesMap: {},
+
   fetchServerNewsgroupsPage: async (params = {}) => {
-    const { serverPage, serverPageSize, serverSearch, serverSort, serverOrder, selectedServerId } = get();
+    const { serverPage, serverPageSize, serverSearch, serverSort, serverOrder, selectedServerId, serverFavoriteOnly } = get();
     const p = params.page !== undefined ? params.page : serverPage;
     const ps = params.pageSize !== undefined ? params.pageSize : serverPageSize;
     const s = params.search !== undefined ? params.search : serverSearch;
     const st = params.sort !== undefined ? params.sort : serverSort;
     const o = params.order !== undefined ? params.order : serverOrder;
     const srvId = params.serverId !== undefined ? params.serverId : selectedServerId;
+    const favOnly = params.favoriteOnly !== undefined ? params.favoriteOnly : serverFavoriteOnly;
 
-    set({ isFetchingServerPage: true });
+    set({ isFetchingServerPage: true, serverFavoriteOnly: favOnly });
 
     try {
       const q = new URLSearchParams({
@@ -102,6 +170,7 @@ export const useNNTPStore = create((set, get) => ({
         search: s,
         serverId: srvId,
         ...(st ? { sort: st, order: o } : {}),
+        ...(favOnly ? { favoriteOnly: 'true' } : {}),
       });
 
       const res = await fetch(`/api/newsgroups?${q.toString()}`);
@@ -141,15 +210,25 @@ export const useNNTPStore = create((set, get) => ({
       const res = await fetch(`/api/favorites?serverId=${srvId}`);
       const data = await res.json();
       if (Array.isArray(data.favorites)) {
-        set({ favorites: data.favorites, favoriteObjects: data.favoriteObjects || [] });
+        set((state) => ({
+          favorites: srvId === state.selectedServerId ? data.favorites : state.favorites,
+          favoriteObjects: srvId === state.selectedServerId ? (data.favoriteObjects || []) : state.favoriteObjects,
+          serverFavoritesMap: {
+            ...state.serverFavoritesMap,
+            [srvId]: {
+              favorites: data.favorites,
+              favoriteObjects: data.favoriteObjects || [],
+            },
+          },
+        }));
       }
     } catch (e) {
       console.error('Failed to fetch favorites:', e);
     }
   },
 
-  toggleStar: async (groupName) => {
-    const srvId = get().selectedServerId;
+  toggleStar: async (groupName, targetServerId) => {
+    const srvId = targetServerId || get().selectedServerId;
     try {
       const res = await fetch('/api/favorites/toggle', {
         method: 'POST',
@@ -158,30 +237,38 @@ export const useNNTPStore = create((set, get) => ({
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.favorites)) {
-        set({ favorites: data.favorites });
-        get().fetchServerNewsgroupsPage();
+        await get().fetchFavorites(srvId);
+        if (srvId === get().selectedServerId) {
+          get().fetchServerNewsgroupsPage();
+        }
       }
     } catch (e) {
       console.error('Failed to toggle star in SQLite:', e);
     }
   },
 
-  addFavoritesBatch: async (groupNames) => {
-    const srvId = get().selectedServerId;
+  addFavoritesBatch: async (groupNames, targetServerId, action = 'add') => {
+    const srvId = targetServerId || get().selectedServerId;
     try {
       const res = await fetch('/api/favorites/batch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ names: groupNames, serverId: srvId }),
+        body: JSON.stringify({ names: groupNames, serverId: srvId, action }),
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.favorites)) {
-        set({ favorites: data.favorites });
-        get().fetchServerNewsgroupsPage();
+        await get().fetchFavorites(srvId);
+        if (srvId === get().selectedServerId) {
+          get().fetchServerNewsgroupsPage();
+        }
       }
     } catch (e) {
-      console.error('Failed to batch save favorites in SQLite:', e);
+      console.error('Failed to batch update favorites in SQLite:', e);
     }
+  },
+
+  removeFavoritesBatch: async (groupNames, targetServerId) => {
+    return get().addFavoritesBatch(groupNames, targetServerId, 'remove');
   },
 
   updateSelectedGroupCounts: async (groupNames) => {
@@ -221,7 +308,7 @@ export const useNNTPStore = create((set, get) => ({
   // Test knob: how many raw articles to request per XOVER batch when
   // auto-continuing to fill a grouped/clean-mode page (independent of
   // `pageSize`, which controls how many rows/groups are shown per page).
-  rawChunkSize: 300,
+  rawChunkSize: 5000,
 
   // Optional manual retrieval range (xnews-style "Start"/"End" article
   // numbers). null means "use the group's actual high/low bound".
@@ -233,11 +320,24 @@ export const useNNTPStore = create((set, get) => ({
   loadingBodyId: null,
 
   fetchArticleBody: (articleId) => {
-    const { ws, articleBodies, selectedGroup } = get();
+    const { ws, articleBodies, selectedGroup, selectedServerId } = get();
     if (articleBodies[articleId]) return; // cached
     set({ loadingBodyId: articleId });
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'FETCH_ARTICLE_BODY', group: selectedGroup, articleId }));
+      ws.send(JSON.stringify({ type: 'FETCH_ARTICLE_BODY', serverId: selectedServerId, group: selectedGroup, articleId }));
+      // Safety timeout: if server never responds, clear loading state after 15s
+      setTimeout(() => {
+        const { loadingBodyId } = get();
+        if (loadingBodyId === articleId) {
+          set({
+            loadingBodyId: null,
+            articleBodies: {
+              ...get().articleBodies,
+              [articleId]: '(No response from server — article may be binary-only or unavailable)',
+            },
+          });
+        }
+      }, 15000);
     }
   },
 
@@ -328,6 +428,7 @@ export const useNNTPStore = create((set, get) => ({
       ws.send(
         JSON.stringify({
           type: 'FETCH_PAGE',
+          serverId: get().selectedServerId,
           group: selectedGroup,
           low,
           high: targetEnd,
@@ -337,16 +438,10 @@ export const useNNTPStore = create((set, get) => ({
       );
     }
 
-    // Safety net in case PAGE_FETCH_COMPLETE never arrives (e.g. the bridge
-    // server process hasn't been restarted since it gained support for that
-    // message) — don't let the UI hang forever waiting for it. Large test
-    // batches (thousands of parts) take longer, so scale the wait a bit.
-    const timeoutMs = Math.min(20000, Math.max(6000, effectiveLimit * 4));
-    setTimeout(() => {
-      if (get().fetchRequestSeq === requestId && get().isFetchingPage) {
-        get()._completeChunk({ empty: false });
-      }
-    }, timeoutMs);
+    // We no longer use a strict frontend timeout for PAGE_FETCH because large 
+    // batches (30k-100k) can easily take several minutes. We rely on the backend 
+    // or WebSocket drop to handle genuine connection failures.
+    // Progress events keep the UI alive.
   },
 
   _completeChunk: ({ empty }) => {
@@ -386,6 +481,7 @@ export const useNNTPStore = create((set, get) => ({
 
     ws.onopen = () => {
       console.log('Connected to NNTP Bridge Server');
+      set({ connected: true });
       get().fetchServers();
       get().fetchFavorites();
       get().fetchServerNewsgroupsPage({ page: 1 });
@@ -394,7 +490,9 @@ export const useNNTPStore = create((set, get) => ({
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
-      if (data.type === 'AUTH_SUCCESS') {
+      if (data.type === 'STATUS') {
+        set({ connected: true });
+      } else if (data.type === 'AUTH_SUCCESS') {
         set({ connected: true, nntpUser: data.user });
         get().fetchServers();
         get().fetchFavorites();
@@ -412,13 +510,37 @@ export const useNNTPStore = create((set, get) => ({
       } else if (data.type === 'FETCH_GROUPS_ERROR') {
         set({ isDownloadingGroups: false, downloadProgressCount: 0 });
         alert(`Failed to save newsgroups: ${data.message}`);
+      } else if (data.type === 'DOWNLOAD_PROGRESS') {
+        set((state) => ({
+          downloads: {
+            ...state.downloads,
+            [data.downloadId]: { current: data.current, total: data.total, status: 'downloading' }
+          }
+        }));
+      } else if (data.type === 'DOWNLOAD_COMPLETE') {
+        set((state) => ({
+          downloads: {
+            ...state.downloads,
+            [data.downloadId]: { status: data.success ? 'complete' : 'error', error: data.error }
+          }
+        }));
+        if (!data.success) {
+          alert(`Download failed: ${data.error}`);
+        }
       } else if (data.type === 'GROUP_SUCCESS') {
         set({
           groupStats: { count: data.count, low: data.low, high: data.high },
           currentPage: 1,
         });
         get()._refetchFromTop({});
+      } else if (data.type === 'PAGE_FETCH_PROGRESS') {
+        set({ xoverProgress: { current: data.current, total: data.total } });
       } else if (data.type === 'PAGE_FETCH_COMPLETE') {
+        if (data.group && data.group !== get().selectedGroup) {
+          console.warn(`[!] Ignored PAGE_FETCH_COMPLETE for ${data.group} (current group is ${get().selectedGroup})`);
+          return;
+        }
+        set({ xoverProgress: null });
         // Parse the whole batch in one pass (O(n) dedup via a Set, one array
         // copy) and commit with a single set() call — doing this per-line
         // was O(n^2) and the actual cause of multi-second/minute stalls on
@@ -464,18 +586,18 @@ export const useNNTPStore = create((set, get) => ({
   },
 
   fetchArticles: (group, page = 1) => {
-    const { ws } = get();
+    const { ws, selectedServerId } = get();
     set({ loading: true, articles: [] });
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'SELECT_GROUP', group: group || get().selectedGroup }));
+      ws.send(JSON.stringify({ type: 'SELECT_GROUP', serverId: selectedServerId, group: group || get().selectedGroup }));
     }
   },
 
   refreshCurrentGroup: () => {
-    const { ws, selectedGroup } = get();
+    const { ws, selectedGroup, selectedServerId } = get();
     set({ loading: true, articles: [] });
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ type: 'REFRESH', group: selectedGroup }));
+      ws.send(JSON.stringify({ type: 'REFRESH', serverId: selectedServerId, group: selectedGroup }));
     }
   },
 
@@ -512,7 +634,10 @@ export const useNNTPStore = create((set, get) => ({
       const res = await fetch('/api/servers');
       const data = await res.json();
       if (data.success && Array.isArray(data.servers) && data.servers.length > 0) {
-        set({ servers: data.servers });
+        const { selectedServerId } = get();
+        const currentServer = data.servers.find(s => s.id === selectedServerId);
+        const newChunkSize = currentServer?.default_article_count || 300;
+        set({ servers: data.servers, rawChunkSize: newChunkSize });
       }
     } catch (e) {
       console.error('Failed to fetch servers from API:', e);
@@ -541,7 +666,10 @@ export const useNNTPStore = create((set, get) => ({
       });
       const data = await res.json();
       if (data.success && Array.isArray(data.servers)) {
-        set({ servers: data.servers, isServerModalOpen: false, editingServer: null });
+        const { selectedServerId } = get();
+        const currentServer = data.servers.find(s => s.id === selectedServerId);
+        const newChunkSize = currentServer?.default_article_count || 300;
+        set({ servers: data.servers, isServerModalOpen: false, editingServer: null, rawChunkSize: newChunkSize });
         return;
       }
     } catch (e) {

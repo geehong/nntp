@@ -19,6 +19,146 @@ import {
 
 const PROVIDERS_DATA = [
   {
+    id: 'newshosting',
+    name: 'Newshosting',
+    url: 'https://www.newshosting.com/',
+    backbone: 'Omicron / Newshosting (글로벌 1위)',
+    newsgroups: '120,000+',
+    retention: '6,400+ 일 (17년+ 최장 보유)',
+    badge: 'Tom\'s Guide 종합 1위',
+    badgeColor: '#0284c7', // blue
+    monthlyCapacity: '무제한 (Unlimited)',
+    recommendation: 'Tom\'s Guide 및 해외 평가 종합 1위. 17년+ 최장 보유기간, 99.9% 완결성, 검색 및 프리뷰 기능 자체 뉴스리더 & 무료 VPN 포함',
+    plans: [
+      { name: 'Special 12+3 Deal', price: '$5.99 / 월 (약 8,100원)', speed: 'Unlimited', conn: 100, capacity: '무제한 (15개월 할인가)', highlight: true },
+      { name: 'Unlimited Monthly', price: '$12.95 / 월 (약 17,500원)', speed: 'Unlimited', conn: 100, capacity: '무제한', highlight: false },
+      { name: 'XL Powerpack', price: '$15.83 / 월 (약 21,300원)', speed: 'Unlimited', conn: 100, capacity: '무제한 + VPN + Easynews 웹검색', highlight: false },
+    ],
+    features: [
+      'Tom\'s Guide 선정 2026 베스트 유즈넷 서비스 종합 1위',
+      '17년+ (6,400일+) 업계 최고 아티클 보존 기간 및 99.9% 다운로드 완결률',
+      '파일 프리뷰 및 직관적 검색이 가능한 전용 Newsreader 제공',
+      '미국/유럽 멀티 데이터센터 보유로 회선 속도 100% 포화',
+      '무제한 플랜 시 스위스 기반 노로그(No-Log) VPN 무료 제공'
+    ]
+  },
+  {
+    id: 'eweka',
+    name: 'Eweka',
+    url: 'https://www.eweka.nl/',
+    backbone: 'Independent Dutch Backbone (유럽 1위 백본)',
+    newsgroups: '125,000+',
+    retention: '6,400+ 일 (17년+ 최장 보유)',
+    badge: 'Tom\'s Guide 가성비 1위',
+    badgeColor: '#10b981', // green
+    monthlyCapacity: '무제한 (Unlimited)',
+    recommendation: 'Tom\'s Guide 선정 최고의 가성비 유즈넷. 유럽 독자 백본 데이터센터로 유휴 삭제/DMCA 영향이 적고 125,000개 이상의 가장 많은 뉴스그룹 보유',
+    plans: [
+      { name: '15 Months Special', price: '€6.99 / 월 (약 10,500원)', speed: 'Unlimited', conn: 50, capacity: '무제한 (15개월 일시불)', highlight: true },
+      { name: '12 Months Plan', price: '€9.00 / 월 (약 13,500원)', speed: 'Unlimited', conn: 50, capacity: '무제한', highlight: false },
+      { name: '1 Month Standard', price: '€9.50 / 월 (약 14,250원)', speed: 'Unlimited', conn: 50, capacity: '무제한', highlight: false },
+    ],
+    features: [
+      '유럽 최고의 독립 데이터센터 및 대서양 가로지르는 전용 백본망 운영',
+      '125,000개 이상의 뉴스그룹 지원 (업계 최상위 수치)',
+      '6,400일+ 최장 Retention 보유로 오래된 희귀 자료 다운로드에 최적',
+      '복잡한 단계 없는 투명하고 명확한 단일 가격 플랜'
+    ]
+  },
+  {
+    id: 'usenetserver',
+    name: 'UsenetServer',
+    url: 'https://www.usenetserver.com/',
+    backbone: 'Tier-1 Backbone (로우 데이터 검색)',
+    newsgroups: '100,000+',
+    retention: '6,400+ 일 (17년+)',
+    badge: 'Tom\'s Guide 수동검색 1위',
+    badgeColor: '#8b5cf6', // purple
+    monthlyCapacity: '무제한 (Unlimited)',
+    recommendation: 'Global Search로 인덱서에 등록되지 않은 숨겨진/난수화된 파일 직접 쿼리 가능. Tier-1 회선으로 20커넥션만으로도 900+Mbps 완벽 대역폭 보장',
+    plans: [
+      { name: 'Annual Exclusive', price: '$7.95 / 월 (약 10,700원)', speed: 'Unlimited', conn: 20, capacity: '무제한 + PrivadoVPN 포함', highlight: true },
+      { name: '3 Months Plan', price: '$8.95 / 월 (약 12,000원)', speed: 'Unlimited', conn: 20, capacity: '무제한', highlight: false },
+      { name: '1 Month Standard', price: '$14.95 / 월 (약 20,100원)', speed: 'Unlimited', conn: 20, capacity: '무제한', highlight: false },
+    ],
+    features: [
+      'Global Search 기능으로 외부 인덱서에서 빠진 원본 데이터 아카이브 직검색 가능',
+      'Tier-1 백본 망으로 20개 커넥션만으로 900Mbps 이상의 회선 속도 완벽 소화',
+      '6,400일+ 최상위 아티클 보존 기간 제공',
+      '연간 플랜 결제 시 PrivadoVPN (노로그 프리미엄 VPN) 무료 포함'
+    ]
+  },
+  {
+    id: 'giganews',
+    name: 'Giganews',
+    url: 'https://www.giganews.com/',
+    backbone: 'Giganews High-Speed Active Storage',
+    newsgroups: '110,000+',
+    retention: '1,800+ 일 (최신 5년 액티브 전용)',
+    badge: '최신자료 속도 1위',
+    badgeColor: '#e11d48', // rose
+    monthlyCapacity: '무제한 (Unlimited)',
+    recommendation: '최근 5년 이내의 자료를 가장 빠르고 100% 손실 없이 다운로드받고 싶을 때 최적. VyprVPN 무료 번들 및 전문 엔지니어 지원',
+    plans: [
+      { name: '1 Year Plan', price: '$8.33 / 월 (약 11,200원)', speed: 'Unlimited', conn: 100, capacity: '무제한 + VyprVPN 포함', highlight: true },
+      { name: '6 Months Plan', price: '$9.17 / 월 (약 12,300원)', speed: 'Unlimited', conn: 100, capacity: '무제한 + VyprVPN', highlight: false },
+      { name: '1 Month Standard', price: '$9.99 / 월 (약 13,500원)', speed: 'Unlimited', conn: 100, capacity: '무제한 + VyprVPN', highlight: false },
+    ],
+    features: [
+      '느린 장기 아카이브 대신 고속 액티브 스토리지 중심 운영으로 압도적 다운로드 속도',
+      '최근 5년 이내 자료에 대해 100% 완결성(Completion Rate) 보장',
+      '업계 최고 수준의 VyprVPN 프리미엄 서비스 전 플랜 무료 포함',
+      '100개 동시 SSL 커넥션 및 24/7 전문 기술지원팀 운영'
+    ]
+  },
+  {
+    id: 'tweaknews',
+    name: 'TweakNews',
+    url: 'https://www.tweaknews.eu/',
+    backbone: 'Independent Dutch Backbone',
+    newsgroups: '120,000+',
+    retention: '5,000+ 일 (약 13.6년)',
+    badge: '유연한 플랜 / 블록 1위',
+    badgeColor: '#f97316', // orange
+    monthlyCapacity: '속도제한 플랜 또는 블록 용량',
+    recommendation: '속도별 알뜰 플랜(50Mbps/100Mbps/무제한)과 유효기간 무제한 블록 계정을 모두 제공하는 유비무환 유즈넷',
+    plans: [
+      { name: 'Fast Plan (50Mbps)', price: '€5.83 / 월 (약 8,700원)', speed: '50 Mbit/s (6.25 MB/s)', conn: 30, capacity: '30일 16.20 TB 수용', highlight: false },
+      { name: 'Lightning (100Mbps)', price: '€7.50 / 월 (약 11,250원)', speed: '100 Mbit/s (12.5 MB/s)', conn: 45, capacity: '30일 32.40 TB 수용', highlight: false },
+      { name: 'Ultimate + VPN', price: '€9.07 / 월 (약 13,600원)', speed: 'Unlimited', conn: 60, capacity: '무제한 + VPN 포함', highlight: true },
+      { name: '500GB Block', price: '€45.00 (약 67,500원)', speed: 'Unlimited', conn: 30, capacity: '500 GB (무기한 이월)', type: 'block' },
+    ],
+    features: [
+      '인터넷 속도에 맞춘 유연한 속도제한 플랜(50Mbit/100Mbit)으로 비용 절감',
+      '유효기간이 절대 만료되지 않는 비만료(Non-expiring) 블록 계정 제공',
+      '전용 뉴스리더 UsenetWire 제공 및 스위스/네덜란드 백본 이용',
+      '5,000일 이상의 깊은 보존 기간 지원'
+    ]
+  },
+  {
+    id: 'easynews',
+    name: 'Easynews',
+    url: 'https://www.easynews.com/',
+    backbone: 'Omicron / Easynews Web Engine',
+    newsgroups: '120,000+',
+    retention: '6,400+ 일 (17년+)',
+    badge: '입문자 / 브라우저 1위',
+    badgeColor: '#06b6d4', // cyan
+    monthlyCapacity: '웹 브라우저 다운로드 또는 NNTP 무제한',
+    recommendation: '프로그램 설치 없이 웹 브라우저에서 바로 검색/재생/다운로드 가능! 초보자가 유즈넷을 시작하기에 가장 쉬운 최고의 전용 웹 인터페이스 제공',
+    plans: [
+      { name: 'Annual Unlimited Special', price: '$5.99 / 월 (약 8,100원)', speed: 'Unlimited', conn: 60, capacity: '무제한 웹 + NNTP (15개월 할인가)', highlight: true },
+      { name: 'Classic Plan', price: '$9.95 / 월 (약 13,400원)', speed: 'Unlimited', conn: 20, capacity: '웹 20GB/월 (미사용 이월)', highlight: false },
+      { name: 'Big Gig Plan', price: '$14.95 / 월 (약 20,100원)', speed: 'Unlimited', conn: 20, capacity: '웹 150GB/월 + NNTP 포함', highlight: false },
+    ],
+    features: [
+      '별도의 다운로드 프로그램(SABnzbd 등) 없이 웹 브라우저에서 1클릭 다운로드',
+      '미디어 썸네일 미리보기, 코덱/해상도별 브라우저 즉시 스트리밍 지원',
+      '미사용 웹 다운로드 트래픽이 다음 달로 이월되는 Gig Bank 시스템',
+      '6,400일+ 최고의 retention 및 120,000+ 뉴스그룹 지원'
+    ]
+  },
+  {
     id: 'vipernews',
     name: 'ViperNews',
     url: 'https://www.vipernews.com/',
@@ -71,25 +211,25 @@ const PROVIDERS_DATA = [
     id: 'blocknews',
     name: 'Blocknews',
     url: 'https://blocknews.net/',
-    backbone: 'Omicron / Highwinds (최장 Retention)',
-    newsgroups: '125,000+',
-    retention: '5,878+ 일 (약 16년 - 최장 보존)',
-    badge: 'Fill Account 1위 추천',
+    backbone: 'Abavia / BaseIP (Block Reseller)',
+    newsgroups: '115,000+',
+    retention: '1,500~2,000+ 일 (헤더 단축 인덱스)',
+    badge: '충전형 Fill Account 추천',
     badgeColor: '#8b5cf6', // purple
     monthlyCapacity: '구매 블록 용량 (무기한 이월)',
-    recommendation: '오래된 희귀 자료 다운로드용 보완(Fill) 블록 계정 필수 1순위',
+    recommendation: '메인 서버의 누락 조각(Missing Parts) 보충 및 만료 없는 이월용 충전형 블록 계정',
     plans: [
-      { name: '50GB Block', price: '$5.49 (약 7,400원)', speed: 'Unlimited', conn: 50, capacity: '50 GB ($0.11/GB)', type: 'block' },
-      { name: '100GB Block', price: '$8.99 (약 12,100원)', speed: 'Unlimited', conn: 50, capacity: '100 GB ($0.09/GB)', type: 'block' },
-      { name: '200GB Block', price: '$14.49 (약 19,500원)', speed: 'Unlimited', conn: 50, capacity: '200 GB ($0.07/GB)', type: 'block', highlight: true },
-      { name: '500GB Block', price: '$24.99 (약 33,700원)', speed: 'Unlimited', conn: 50, capacity: '500 GB ($0.05/GB)', type: 'block' },
-      { name: '1024GB (1TB) Block', price: '$39.99 (약 54,000원)', speed: 'Unlimited', conn: 50, capacity: '1,024 GB ($0.04/GB)', type: 'block' },
-      { name: '3072GB (3TB) Block', price: '$99.99 (약 135,000원)', speed: 'Unlimited', conn: 50, capacity: '3,072 GB ($0.03/GB)', type: 'block' },
+      { name: '50GB Block', price: '$5.49 (약 7,400원)', speed: 'Unlimited', conn: 50, capacity: '50 GB (무기한 이월)', type: 'block' },
+      { name: '100GB Block', price: '$8.99 (약 12,100원)', speed: 'Unlimited', conn: 50, capacity: '100 GB (무기한 이월)', type: 'block' },
+      { name: '200GB Block', price: '$14.49 (약 19,500원)', speed: 'Unlimited', conn: 50, capacity: '200 GB (무기한 이월)', type: 'block', highlight: true },
+      { name: '500GB Block', price: '$24.99 (약 33,700원)', speed: 'Unlimited', conn: 50, capacity: '500 GB (무기한 이월)', type: 'block' },
+      { name: '1024GB (1TB) Block', price: '$39.99 (약 54,000원)', speed: 'Unlimited', conn: 50, capacity: '1,024 GB (무기한 이월)', type: 'block' },
+      { name: '3072GB (3TB) Block', price: '$99.99 (약 135,000원)', speed: 'Unlimited', conn: 50, capacity: '3,072 GB (무기한 이월)', type: 'block' },
     ],
     features: [
-      '업계 최장 보유 기간(5,878일+) Omicron 백본 직접 이용',
       'Non-Expiring (구매한 용량이 절대로 만료되거나 사라지지 않음)',
-      'SABnzbd / NZBGet 등의 2차 우선순위(Priority 1) 백업용 최고',
+      'SABnzbd / NZBGet 등에서 2차 우선순위(Priority 1) 누락 조각 보충용(Fill Server)',
+      '메인 서버(Usenet.Farm / Eweka)에서 빠진 조각 자동 채움',
       'PayPal, 신용카드, 가상화폐 결제 지원'
     ]
   },
@@ -390,6 +530,90 @@ export default function RecommendedUsenet() {
         </div>
       </div>
 
+      {/* 500GB Block Price Comparison */}
+      <div
+        style={{
+          background: '#ffffff',
+          borderRadius: '12px',
+          padding: '20px 24px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+          marginBottom: '28px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+          <Database color="#8b5cf6" size={20} />
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>
+            💾 500GB 블록 (유효기간 무제한) 제공업체 가격 비교
+          </h2>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#64748b' }}>
+                <th style={{ padding: '10px', fontWeight: 600 }}>제공업체 (그룹명)</th>
+                <th style={{ padding: '10px', fontWeight: 600 }}>플랜</th>
+                <th style={{ padding: '10px', fontWeight: 600 }}>가격</th>
+                <th style={{ padding: '10px', fontWeight: 600 }}>보유기간 (Retention)</th>
+                <th style={{ padding: '10px', fontWeight: 600 }}>커넥션</th>
+                <th style={{ padding: '10px', fontWeight: 600 }}>속도</th>
+                <th style={{ padding: '10px', fontWeight: 600 }}>기간 / 수용 용량</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PROVIDERS_DATA.map(p => {
+                const block500 = p.plans.find(plan => plan.type === 'block' && (plan.name.includes('500GB') || plan.name.includes('500 GB') || plan.name === 'BLOCK 500'));
+                if (!block500) return null;
+                const isCheapest = p.name === 'ViperNews';
+                
+                let wonPerGbText = '';
+                const wonMatch = block500.price.match(/약\s*([0-9,]+)원/);
+                if (wonMatch) {
+                  const won = parseInt(wonMatch[1].replace(/,/g, ''), 10);
+                  const wonPerGb = Math.round(won / 500);
+                  wonPerGbText = `(약 ${wonPerGb}원/GB)`;
+                }
+
+                return (
+                  <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9', background: isCheapest ? '#f0fdf4' : 'transparent' }}>
+                    <td style={{ padding: '12px 10px', fontWeight: 700, color: '#334155' }}>
+                      <a href={p.url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        {p.name}
+                        <ExternalLink size={12} />
+                      </a>
+                    </td>
+                    <td style={{ padding: '12px 10px', color: '#475569', fontWeight: 600 }}>
+                      {block500.name}
+                      {isCheapest && <span style={{ marginLeft: '6px', fontSize: '0.65rem', background: '#10b981', color: '#fff', padding: '2px 6px', borderRadius: '4px', verticalAlign: 'middle' }}>최저가</span>}
+                    </td>
+                    <td style={{ padding: '12px 10px', fontWeight: 800, color: isCheapest ? '#059669' : '#0f172a' }}>
+                      {block500.price}
+                      {wonPerGbText && (
+                        <span style={{ fontSize: '0.75rem', color: isCheapest ? '#059669' : '#64748b', fontWeight: 500, marginLeft: '6px' }}>
+                          {wonPerGbText}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px 10px', color: '#64748b' }}>
+                      {p.retention}
+                    </td>
+                    <td style={{ padding: '12px 10px', color: '#64748b' }}>
+                      {block500.conn} Conn
+                    </td>
+                    <td style={{ padding: '12px 10px', color: '#64748b' }}>
+                      {block500.speed}
+                    </td>
+                    <td style={{ padding: '12px 10px', color: '#64748b' }}>
+                      {block500.capacity}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Filter Toolbar */}
       <div
         style={{
@@ -654,6 +878,67 @@ export default function RecommendedUsenet() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Tom's Guide 2026 Special Buying Guide & FAQ Section */}
+      <div
+        style={{
+          marginTop: '36px',
+          background: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          padding: '28px 32px',
+          boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.05)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+          <Sparkles color="#0284c7" size={22} />
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+            📖 Tom's Guide 전문 에디터의 유즈넷 가이드 & 필수 FAQ (2026 분석)
+          </h2>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px', fontSize: '0.875rem' }}>
+          {/* Guide Item 1 */}
+          <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0369a1', marginBottom: '8px' }}>
+              1. 보존 기간(Retention) vs 다운로드 완결률(Completion Rate)
+            </h3>
+            <p style={{ color: '#475569', lineHeight: 1.6 }}>
+              일반 사용자에게는 단순 Retention(보존 일수)보다 <strong>Completion Rate(다운로드 성공 완결률)</strong>이 훨씬 중요합니다. Newshosting, Eweka처럼 <strong>99.9% 완결률</strong>을 보장하는 업체는 파일 조각이 유실되어 다운로드에 실패하는 일이 거의 없습니다. 2010년 이전의 아주 희귀한 구형 자료를 찾는 것이 아니라면 3,000일 이상의 Retention이면 충분합니다.
+            </p>
+          </div>
+
+          {/* Guide Item 2 */}
+          <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0369a1', marginBottom: '8px' }}>
+              2. 동시 소켓 커넥션(Connections)은 몇 개가 적당할까?
+            </h3>
+            <p style={{ color: '#475569', lineHeight: 1.6 }}>
+              업체들이 50~100개 커넥션을 내세우지만, 실제 <strong>1Gbps(기가비트) 인터넷 속도를 100% 한계치까지 채우는 데는 20개 커넥션으로도 충분</strong>합니다. (실제로 UsenetServer는 20개 커넥션만으로 900+Mbps 대역폭을 모두 소화했습니다). 2Gbps 이상의 초고속 회선 사용자가 아니라면 커넥션 개수에 연연해 더 많은 돈을 지불할 필요가 없습니다.
+            </p>
+          </div>
+
+          {/* Guide Item 3 */}
+          <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0369a1', marginBottom: '8px' }}>
+              3. 무제한 월정액(Unlimited) vs 블록 계정(Block Account)
+            </h3>
+            <p style={{ color: '#475569', lineHeight: 1.6 }}>
+              매일 대용량 미디어를 다운로드받는 헤비 유저라면 <strong>무제한 월정액 플랜(Newshosting, Eweka, ViperNews)</strong>을 추천합니다. 반면, 어쩌다 가끔만 사용하거나 백업 보완용(Fill Account)으로만 쓰는 사용자라면 구매한 용량이 평생 차감 이월되는 <strong>TweakNews / Blocknews의 블록 계정</strong>을 선택하는 것이 비용상 훨씬 이득입니다.
+            </p>
+          </div>
+
+          {/* Guide Item 4 */}
+          <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0369a1', marginBottom: '8px' }}>
+              4. 유즈넷 이용 시 별도의 VPN이 꼭 필요한가요?
+            </h3>
+            <p style={{ color: '#475569', lineHeight: 1.6 }}>
+              결론부터 말하면 <strong>필수가 아닙니다.</strong> 본 추천 목록의 모든 유즈넷 제공업체는 <strong>256-bit SSL/TLS 암호화 연결</strong>을 기본 제공하므로, 통신사(ISP)가 다운로드 내용을 볼 수 없습니다. 다만, 인덱서 웹사이트 접근 시 IP 보안이나 일반 웹 브라우징 프라이버시 보호가 필요하다면 번들 VPN(Newshosting, Giganews, UsenetServer)이 포함된 플랜을 활용하세요.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

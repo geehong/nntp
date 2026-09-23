@@ -11,9 +11,12 @@ export default function NewsgroupSidebar() {
     newsgroups = [],
     favorites = [],
     favoriteObjects = [],
+    serverFavoritesMap = {},
+    fetchFavorites,
     downloadServerNewsgroups,
     isDownloadingGroups,
     toggleStar,
+    setServerFavoriteOnly,
     openEditServerModal,
     servers = [],
   } = useNNTPStore();
@@ -22,25 +25,22 @@ export default function NewsgroupSidebar() {
   const [expandedServers, setExpandedServers] = useState({ 'server-viper': true, 'server-farm': true });
   const [favoritesExpanded, setFavoritesExpanded] = useState(true);
 
+  // Fetch favorites for all servers on mount so tree items show up per server
+  const fetchedRef = React.useRef(new Set());
+  React.useEffect(() => {
+    if (Array.isArray(servers) && fetchFavorites) {
+      servers.forEach((srv) => {
+        if (srv && srv.id && !fetchedRef.current.has(srv.id)) {
+          fetchedRef.current.add(srv.id);
+          fetchFavorites(srv.id);
+        }
+      });
+    }
+  }, [servers]);
+
   const safeGroups = Array.isArray(newsgroups) ? newsgroups : [];
   const safeFavorites = Array.isArray(favorites) ? favorites : [];
   const safeFavoriteObjects = Array.isArray(favoriteObjects) ? favoriteObjects : [];
-
-  // Build complete favorites list
-  const favoriteMap = new Map();
-  safeFavoriteObjects.forEach((obj) => {
-    if (obj && obj.name) favoriteMap.set(obj.name, obj);
-  });
-  safeGroups.forEach((g) => {
-    if (g && g.is_favorite) favoriteMap.set(g.name, g);
-  });
-  safeFavorites.forEach((name) => {
-    if (!favoriteMap.has(name)) {
-      favoriteMap.set(name, { name, count: '0' });
-    }
-  });
-
-  const favoriteGroups = Array.from(favoriteMap.values());
 
   const toggleServerExpand = (serverId) => {
     setExpandedServers((prev) => ({ ...prev, [serverId]: !prev[serverId] }));
@@ -97,10 +97,41 @@ export default function NewsgroupSidebar() {
         </button>
       </div>
 
-      {/* Render All Configured NNTP Servers */}
-      {servers.map((srv) => {
+      {/* Render All Configured NNTP Servers (Sorted: Block -> Viper -> Farm) */}
+      {[...servers].sort((a, b) => {
+        const order = { 'server-block': 1, 'server-viper': 2, 'server-farm': 3 };
+        const orderA = order[a.id] || 99;
+        const orderB = order[b.id] || 99;
+        return orderA - orderB;
+      }).map((srv) => {
         const isServerActive = selectedServerId === srv.id;
         const isExpanded = expandedServers[srv.id] !== false;
+
+        // Compute per-server favorites map
+        const srvFavData = serverFavoritesMap[srv.id] || {
+          favorites: isServerActive ? safeFavorites : [],
+          favoriteObjects: isServerActive ? safeFavoriteObjects : [],
+        };
+        const srvFavs = srvFavData.favorites || [];
+        const srvFavObjs = srvFavData.favoriteObjects || [];
+        const favSet = new Set(srvFavs);
+        const favoriteMap = new Map();
+
+        srvFavObjs.forEach((obj) => {
+          if (obj && obj.name && favSet.has(obj.name)) favoriteMap.set(obj.name, obj);
+        });
+        if (isServerActive) {
+          safeGroups.forEach((g) => {
+            if (g && g.is_favorite && favSet.has(g.name)) favoriteMap.set(g.name, g);
+          });
+        }
+        srvFavs.forEach((name) => {
+          if (!favoriteMap.has(name)) {
+            favoriteMap.set(name, { name, count: '0' });
+          }
+        });
+
+        const favoriteGroups = Array.from(favoriteMap.values());
 
         return (
           <div key={srv.id} style={{ marginBottom: '14px' }}>
@@ -121,7 +152,7 @@ export default function NewsgroupSidebar() {
               }}
               title={`${srv.name} (${srv.host}:${srv.port})`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
                 {!isCollapsed && (
                   <button
                     onClick={(e) => {
@@ -141,6 +172,7 @@ export default function NewsgroupSidebar() {
                       padding: 0,
                       fontSize: '0.8rem',
                       fontWeight: 'bold',
+                      flexShrink: 0,
                       color: srv.isPrimary ? '#0284c7' : '#059669',
                     }}
                     title={isExpanded ? "Collapse Server Tree (-)" : "Expand Server Tree (+)"}
@@ -148,16 +180,16 @@ export default function NewsgroupSidebar() {
                     {isExpanded ? '-' : '+'}
                   </button>
                 )}
-                <Server size={18} color={srv.isPrimary ? '#0284c7' : '#059669'} />
+                <Server size={18} color={srv.isPrimary ? '#0284c7' : '#059669'} style={{ flexShrink: 0 }} />
                 {!isCollapsed && (
-                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '110px' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                     {srv.name}
                   </span>
                 )}
               </div>
 
               {!isCollapsed && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0, marginLeft: '4px' }}>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -168,9 +200,8 @@ export default function NewsgroupSidebar() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '3px',
-                      fontSize: '0.68rem',
-                      padding: '2px 6px',
+                      justifyContent: 'center',
+                      padding: '3px 5px',
                       borderRadius: '4px',
                       border: '1px solid #cbd5e1',
                       background: '#ffffff',
@@ -180,8 +211,7 @@ export default function NewsgroupSidebar() {
                     }}
                     title="Sync Newsgroups List from Server"
                   >
-                    {isDownloadingGroups && isServerActive ? <Loader2 size={10} className="spin" /> : <RefreshCw size={10} />}
-                    <span>Sync</span>
+                    {isDownloadingGroups && isServerActive ? <Loader2 size={12} className="spin" /> : <RefreshCw size={12} />}
                   </button>
 
                 <button
@@ -223,12 +253,23 @@ export default function NewsgroupSidebar() {
                     color: '#475569',
                     cursor: 'pointer',
                   }}
-                  onClick={() => setFavoritesExpanded(!favoritesExpanded)}
-                  title={`Favorite Groups (${favoriteGroups.length})`}
+                  onClick={() => {
+                    if (selectedServerId !== srv.id) {
+                      setSelectedServerId(srv.id);
+                    }
+                    setSelectedGroup('__SERVER__');
+                    setServerFavoriteOnly(true);
+                    setFavoritesExpanded(!favoritesExpanded);
+                  }}
+                  title={`Click to show favorites in table (${favoriteGroups.length})`}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     {!isCollapsed && (
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setFavoritesExpanded(!favoritesExpanded);
+                        }}
                         style={{
                           background: '#ffffff',
                           border: '1px solid #cbd5e1',
@@ -266,8 +307,13 @@ export default function NewsgroupSidebar() {
                       favoriteGroups.map((g) => (
                         <div
                           key={g.name}
-                          className={`group-item ${selectedGroup === g.name ? 'active' : ''}`}
-                          onClick={() => setSelectedGroup(g.name)}
+                          className={`group-item ${selectedServerId === srv.id && selectedGroup === g.name ? 'active' : ''}`}
+                          onClick={() => {
+                            if (selectedServerId !== srv.id) {
+                              setSelectedServerId(srv.id);
+                            }
+                            setSelectedGroup(g.name);
+                          }}
                           style={{
                             padding: isCollapsed ? '6px 0' : '5px 8px',
                             fontSize: '0.8rem',
@@ -280,7 +326,7 @@ export default function NewsgroupSidebar() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleStar(g.name);
+                                toggleStar(g.name, srv.id);
                               }}
                               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                             >

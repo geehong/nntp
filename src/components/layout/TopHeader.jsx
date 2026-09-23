@@ -3,9 +3,9 @@ import { useNNTPStore } from '../../store/useNNTPStore';
 import { Newspaper, Gauge, Key, Search, DownloadCloud, Wifi, WifiOff, Settings, Sparkles } from 'lucide-react';
 
 export default function TopHeader() {
-  const { activeTab, setActiveTab, articleSearchQuery, setArticleSearchQuery, connected, nntpUser, servers } = useNNTPStore();
-  const primaryServer = (servers || []).find((s) => s.isPrimary) || (servers || [])[0];
-  const serverDisplayName = primaryServer ? primaryServer.name : 'ViperNews Server';
+  const { activeTab, setActiveTab, articleSearchQuery, setArticleSearchQuery, connected, selectedServerId, servers, disconnectedByUser, setDisconnectedByUser, connectBridge } = useNNTPStore();
+  const currentServer = (servers || []).find((s) => s.id === selectedServerId) || (servers || []).find((s) => s.isPrimary) || (servers || [])[0];
+  const serverDisplayName = currentServer ? currentServer.name : 'BlockNews Server (Asia)';
 
   return (
     <header className="top-header">
@@ -42,7 +42,60 @@ export default function TopHeader() {
           }}
         >
           {connected ? <Wifi size={14} /> : <WifiOff size={14} />}
-          <span>{connected ? `${serverDisplayName} SSL (${nntpUser})` : 'Connecting...'}</span>
+          <span>{connected ? `${serverDisplayName} SSL` : disconnectedByUser ? 'Disconnected (로그아웃됨)' : 'Connecting...'}</span>
+          {connected ? (
+            <button
+              onClick={async () => {
+                if (window.confirm('웹 앱의 모든 연결(다운로드 포함)을 강제 종료하시겠습니까? (이 버튼을 누르고 잠시 후 Newsbin에서 다시 연결을 시도하세요)')) {
+                  try {
+                    await fetch('/api/disconnect', { method: 'POST' });
+                    useNNTPStore.getState().ws?.close();
+                    useNNTPStore.setState({ connected: false, disconnectedByUser: true });
+                  } catch (e) {
+                    alert('연결 해제 중 오류가 발생했습니다.');
+                  }
+                }
+              }}
+              style={{
+                marginLeft: '8px',
+                padding: '2px 6px',
+                background: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              title="Force disconnect all NNTP sockets"
+            >
+              Disconnect
+            </button>
+          ) : disconnectedByUser ? (
+            <button
+              onClick={() => {
+                setDisconnectedByUser(false);
+                connectBridge();
+              }}
+              style={{
+                marginLeft: '8px',
+                padding: '2px 6px',
+                background: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '0.7rem',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              Reconnect
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -59,7 +112,7 @@ export default function TopHeader() {
           onClick={() => setActiveTab('farm')}
         >
           <Gauge size={16} />
-          <span>Usenet.Farm Dashboard</span>
+          <span>Status Dashboard</span>
         </button>
         <button
           className={`nav-tab ${activeTab === 'recommended' ? 'active' : ''}`}

@@ -1,6 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNNTPStore } from '../../store/useNNTPStore';
-import { Server, ShieldCheck, Plus, Settings, RefreshCw, Trash2, CheckCircle2, Activity, Database, Lock } from 'lucide-react';
+import FolderPickerModal from './FolderPickerModal';
+import { Server, ShieldCheck, Plus, Settings, RefreshCw, Trash2, CheckCircle2, Activity, Database, Lock, Loader2 } from 'lucide-react';
+
+function ArticleCountInput({ srv, saveServer }) {
+  const [val, setVal] = useState(srv.default_article_count || 300);
+  const handleSave = () => {
+    saveServer({ ...srv, default_article_count: Number(val) });
+    alert('기본 아티클 표시 갯수가 저장되었습니다!');
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 12px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Default View Count:</span>
+      <input 
+        type="number" 
+        value={val} 
+        onChange={e => setVal(e.target.value)}
+        title="기본 아티클 표시 갯수"
+        style={{ width: '70px', padding: '2px 6px', fontSize: '0.8rem', border: '1px solid #cbd5e1', borderRadius: '4px', textAlign: 'right' }}
+      />
+      <button 
+        onClick={handleSave}
+        style={{ padding: '3px 10px', fontSize: '0.75rem', fontWeight: 600, background: '#0284c7', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+      >
+        Save
+      </button>
+    </div>
+  );
+}
 
 export default function CredentialsForm() {
   const {
@@ -11,7 +38,31 @@ export default function CredentialsForm() {
     downloadServerNewsgroups,
     isDownloadingGroups,
     connected,
+    globalSettings,
+    fetchGlobalSettings,
+    saveGlobalSettings,
+    saveServer,
   } = useNNTPStore();
+
+  const [localSettings, setLocalSettings] = useState({ rawTemp: '', rawResult: '' });
+  const [isSaving, setIsSaving] = useState(false);
+  const [pickerOpenFor, setPickerOpenFor] = useState(null);
+
+  useEffect(() => {
+    fetchGlobalSettings();
+  }, [fetchGlobalSettings]);
+
+  useEffect(() => {
+    if (globalSettings) {
+      setLocalSettings(globalSettings);
+    }
+  }, [globalSettings]);
+
+  const handleSaveSettings = async () => {
+    setIsSaving(true);
+    await saveGlobalSettings(localSettings);
+    setIsSaving(false);
+  };
 
   return (
     <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -117,6 +168,9 @@ export default function CredentialsForm() {
                   </span>
                 </div>
               </div>
+
+              {/* Default Article Count Input */}
+              <ArticleCountInput srv={srv} saveServer={saveServer} />
 
               {/* Status Badge */}
               <div
@@ -242,6 +296,94 @@ export default function CredentialsForm() {
             </div>
           </div>
         ))}
+        
+        {/* Global Storage Settings Card */}
+        <div
+          style={{
+            background: '#ffffff',
+            borderRadius: '10px',
+            border: '1px solid #e2e8f0',
+            padding: '20px 24px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            marginTop: '10px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f3e8ff', color: '#9333ea', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Database size={20} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: 0 }}>Global Storage Settings</h3>
+              <span style={{ fontSize: '0.825rem', color: '#64748b' }}>Configure paths for batch downloads and temp files</span>
+            </div>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Download Directory (rawResult)</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  value={localSettings.rawResult || ''}
+                  onChange={e => setLocalSettings({...localSettings, rawResult: e.target.value})}
+                  placeholder="e.g. /app/downloads"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+                />
+                <button
+                  onClick={() => setPickerOpenFor('rawResult')}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#475569', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                >
+                  Browse...
+                </button>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569' }}>Temp Directory (rawTemp)</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  value={localSettings.rawTemp || ''}
+                  onChange={e => setLocalSettings({...localSettings, rawTemp: e.target.value})}
+                  placeholder="e.g. /tmp"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }} 
+                />
+                <button
+                  onClick={() => setPickerOpenFor('rawTemp')}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, color: '#475569', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                >
+                  Browse...
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              onClick={handleSaveSettings}
+              disabled={isSaving}
+              style={{
+                padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#0284c7', color: '#fff', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+            >
+              {isSaving ? <Loader2 size={14} className="spin" /> : <CheckCircle2 size={14} />}
+              {isSaving ? 'Saving...' : 'Save Storage Settings'}
+            </button>
+          </div>
+        </div>
+
+        <FolderPickerModal
+          isOpen={pickerOpenFor !== null}
+          initialPath={pickerOpenFor === 'rawResult' ? localSettings.rawResult : (pickerOpenFor === 'rawTemp' ? localSettings.rawTemp : '/app')}
+          onClose={() => setPickerOpenFor(null)}
+          onSelect={(path) => {
+            if (pickerOpenFor === 'rawResult') setLocalSettings({...localSettings, rawResult: path});
+            if (pickerOpenFor === 'rawTemp') setLocalSettings({...localSettings, rawTemp: path});
+          }}
+        />
+
       </div>
     </div>
   );
