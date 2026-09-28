@@ -10,9 +10,15 @@ dist/
 .env.local
 
 # SQLite Database
+*.db
+*.db-wal
+*.db-shm
 src/data/*.db
 src/data/*.db-wal
 src/data/*.db-shm
+frontend/src/data/*.db
+frontend/src/data/*.db-wal
+frontend/src/data/*.db-shm
 
 # IDE & OS
 .DS_Store

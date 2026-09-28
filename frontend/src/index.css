@@ -1,0 +1,183 @@
+:root {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Light Theme Variables */
+body.light-theme {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+body.light-theme .app-sidebar {
+  background-color: #0f172a;
+  color: #f8fafc;
+  border-right: 1px solid #1e293b;
+}
+body.light-theme .app-header {
+  background-color: #ffffff;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+}
+body.light-theme .card-panel {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark Theme Variables */
+body.dark-theme {
+  background-color: #090d16;
+  color: #f1f5f9;
+}
+body.dark-theme .app-sidebar {
+  background-color: #020617;
+  color: #f8fafc;
+  border-right: 1px solid #1e293b;
+}
+body.dark-theme .app-header {
+  background-color: #0f172a;
+  color: #f1f5f9;
+  border-bottom: 1px solid #1e293b;
+}
+body.dark-theme .card-panel {
+  background-color: #0f172a;
+  border: 1px solid #1e293b;
+  color: #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Layout App Shell */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+}
+
+.app-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  position: relative;
+}
+
+.app-sidebar.collapsed {
+  width: 70px;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.app-header {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 90;
+  transition: position 0.3s ease;
+}
+
+.app-header.fixed-header {
+  position: sticky;
+  top: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.app-content {
+  flex: 1;
+  padding: 24px;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Custom UI Elements */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 8px;
+  margin: 4px 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav-item:hover, .nav-item.active {
+  background-color: #1e293b;
+  color: #38bdf8;
+}
+
+body.dark-theme .nav-item:hover, body.dark-theme .nav-item.active {
+  background-color: #1e293b;
+  color: #38bdf8;
+}
+
+.icon-button {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.icon-button:hover {
+  background-color: rgba(148, 163, 184, 0.15);
+}
+
+.badge {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-blue { background: #0284c7; color: white; }
+.badge-gray { background: #475569; color: white; }
