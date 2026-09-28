@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS newsgroups (
     article_count VARCHAR(50),                                 -- Raw string total article range count (high - low + 1)
     raw_nntp_line TEXT,                                        -- Raw LIST overview response line from NNTP server
     is_favorite INT DEFAULT 0,                                 -- User favorite flag (1: favorite, 0: normal)
+    auto_save_articles INT DEFAULT 0,                          -- Flag to auto-save articles in DB (1: enable auto-save, 0: disabled)
     num_high BIGINT DEFAULT 0,                                 -- Numeric highest article ID for indexing & fast sorting
     num_low BIGINT DEFAULT 0,                                  -- Numeric lowest article ID for indexing & fast sorting
     num_count BIGINT DEFAULT 0,                                -- Numeric estimated article count
@@ -42,12 +43,38 @@ CREATE TABLE IF NOT EXISTS newsgroups (
 
 -- Performance Optimization Indexes for Newsgroup Lookups & Sorting
 CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_fav ON newsgroups(server_id, is_favorite);
+CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_save ON newsgroups(server_id, auto_save_articles);
 CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_name ON newsgroups(server_id, name);
 CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_artcnt ON newsgroups(server_id, num_article_count DESC);
 CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_high ON newsgroups(server_id, num_high DESC);
 CREATE INDEX IF NOT EXISTS idx_newsgroups_srv_count ON newsgroups(server_id, num_count DESC);
 
--- 3. Article XOVER Headers Cache Table
+-- 3. Individual Article Headers & Read History Table
+CREATE TABLE IF NOT EXISTS articles (
+    server_id VARCHAR(100) NOT NULL DEFAULT 'server-easynews', -- Associated NNTP server ID
+    group_name VARCHAR(255) NOT NULL,                           -- Target newsgroup name
+    article_id BIGINT NOT NULL,                                 -- Article sequence number in newsgroup
+    subject TEXT,                                               -- Article subject line / title
+    poster VARCHAR(255),                                        -- Poster name & email address
+    post_date TIMESTAMP WITH TIME ZONE,                         -- Posted date & time
+    message_id VARCHAR(255),                                    -- Unique Message-ID header (without angle brackets)
+    references_header TEXT,                                     -- Parent article Message-ID references for threading
+    bytes BIGINT DEFAULT 0,                                     -- Article body payload size in bytes
+    lines INT DEFAULT 0,                                        -- Total line count of article
+    is_read INT DEFAULT 0,                                      -- Read status flag (1: read, 0: unread)
+    read_at TIMESTAMP WITH TIME ZONE,                           -- Timestamp when article was read by user
+    is_downloaded INT DEFAULT 0,                                -- Binary download status (1: downloaded, 0: not downloaded)
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- Local DB record creation timestamp
+    PRIMARY KEY (server_id, group_name, article_id)
+);
+
+-- Performance Optimization Indexes for Article Queries
+CREATE INDEX IF NOT EXISTS idx_articles_group_id ON articles(server_id, group_name, article_id DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_read_status ON articles(server_id, group_name, is_read);
+CREATE INDEX IF NOT EXISTS idx_articles_msgid ON articles(message_id);
+CREATE INDEX IF NOT EXISTS idx_articles_date ON articles(server_id, group_name, post_date DESC);
+
+-- 4. Article XOVER Headers Cache Table
 CREATE TABLE IF NOT EXISTS article_cache (
     server_id VARCHAR(100) NOT NULL,            -- NNTP server ID
     group_name VARCHAR(255) NOT NULL,           -- Target newsgroup name
@@ -59,7 +86,7 @@ CREATE TABLE IF NOT EXISTS article_cache (
 
 CREATE INDEX IF NOT EXISTS idx_artcache_lookup ON article_cache(server_id, group_name, range_key);
 
--- 4. NNTP Server Traffic & Usage Analytics Table
+-- 5. NNTP Server Traffic & Usage Analytics Table
 CREATE TABLE IF NOT EXISTS server_usage (
     server_id VARCHAR(100) NOT NULL,            -- NNTP server ID
     date VARCHAR(20) NOT NULL,                  -- Usage tracking date (YYYY-MM-DD)
@@ -67,7 +94,7 @@ CREATE TABLE IF NOT EXISTS server_usage (
     PRIMARY KEY (server_id, date)
 );
 
--- 5. Application Metadata & Key-Value Storage Table
+-- 6. Application Metadata & Key-Value Storage Table
 CREATE TABLE IF NOT EXISTS metadata (
     key VARCHAR(100) PRIMARY KEY,               -- Metadata setting key (e.g., 'last_group_sync_time')
     value TEXT                                  -- Metadata setting value
